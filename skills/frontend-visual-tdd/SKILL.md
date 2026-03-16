@@ -1,0 +1,243 @@
+---
+name: frontend-visual-tdd
+description: >
+  Use when implementing or planning React components, pages, or UI interaction
+  flows — especially when a Figma design exists. MUST activate during
+  writing-plans whenever any task involves frontend UI work, to add a visual
+  test strategy to each task definition. Use instead of (or alongside)
+  test-driven-development for frontend UI: AI-written unit tests don't produce
+  a real RED signal because the agent writes code and tests simultaneously.
+  This skill replaces that signal with a Playwright screenshot diff (pixelmatch)
+  as the true RED/GREEN gate. Fully standalone — no other skills required.
+  Figma MCP extracts expected images automatically when connected.
+---
+
+# Frontend Visual TDD
+
+Visual TDD for frontend UI using **Playwright screenshot diff** as the
+RED/GREEN signal. Fully standalone — all browser automation and diff logic
+are bundled in `scripts/`.
+
+## Why unit tests aren't enough here
+
+```
+The AI agent problem:
+  writes code → writes tests (simultaneously)
+  → tests always pass → no RED signal → TDD loop breaks
+
+This skill's fix:
+  extract Figma expected image before implementation  ← real RED
+  → capture actual screenshot → run diff
+  → diff > threshold = RED  |  diff ≤ threshold = GREEN
+```
+
+## Setup
+
+Run once after installing the skill:
+
+```bash
+cd .claude/skills/frontend-visual-tdd/scripts
+npm run setup        # installs deps + downloads Chromium
+```
+
+---
+
+## Task type classification
+
+Classify the task **before doing anything else**.
+
+| Type | When | Screenshot strategy | Default threshold |
+|------|------|---------------------|-------------------|
+| **component** | Single component, prop variants | Viewport screenshot via `/dev/preview` route | 0.1% |
+| **page** | Full route view | `fullPage: true` screenshot | 0.5% |
+| **flow** | Click/input interaction sequence | One screenshot per interaction step | 0.5% per step |
+
+If unclear, ask the user once.
+
+> **`/dev/preview` route:** If the project has no isolated render route for
+> components, create a minimal one first.
+> - URL pattern: `/dev/preview?component=<ComponentName>`
+> - File layout: `src/dev/PreviewPage.tsx` + `src/dev/previews/<Name>.preview.tsx`
+> - Guard with `if (import.meta.env.DEV)` in the router
+> - For components with API calls: register MSW handlers in the `.preview.tsx`
+>   file instead of using `--mock-routes` (keeps mock data co-located with the preview)
+
+---
+
+## Cycle
+
+### PHASE 0 — Capture expected image (prepare RED)
+
+First, determine the task intent:
+
+```
+What kind of task is this?
+  │
+  ├── New implementation / visual bug fix / redesign
+  │     └── Figma MCP connected?
+  │           ├── Yes → find frame/component nodeId
+  │           │         → mcp__figma__get_images
+  │           │         → save to visual-qa/expected/<task>.png
+  │           │         → note Figma frame width × height for viewport match
+  │           └── No  → assertion fallback (write selector/text list; skip diff)
+  │
+  └── Refactor / internal change (no intentional visual change)
+        → capture current rendering as expected BEFORE any code change:
+          node .claude/skills/frontend-visual-tdd/scripts/capture.js \
+            --url  http://localhost:<PORT>/<route> \
+            --out  visual-qa/expected/<task>.png \
+            --type <component|page|flow> \
+            --width <W> --height <H>
+          If diff > threshold after changes → unintended visual regression.
+```
+
+See `references/figma-mcp.md` for nodeId lookup and image extraction.
+
+---
+
+### PHASE 1 — Confirm RED
+
+**Step 1. Start dev server if not running:**
+```bash
+npm run dev &
+npx wait-on http://localhost:<PORT>
+```
+
+**Step 2. Handle API calls (if any):**
+```
+Does the target make API calls?
+  ├── component type → use MSW handlers in .preview.tsx (preferred)
+  │                    no --mock-routes needed
+  │
+  ├── page / flow type → create a mock routes file and pass it to capture:
+  │     --mock-routes visual-qa/mocks/<task>.json
+  │     See references/mock-routes-example.json for format.
+  │     Mock every API call the page makes — unmocked calls cause
+  │     networkidle to hang or render incomplete state.
+  │
+  └── no API calls → proceed without --mock-routes
+```
+
+**Step 3. Capture actual screenshot:**
+```bash
+node .claude/skills/frontend-visual-tdd/scripts/capture.js \
+  --url         http://localhost:<PORT>/<route> \
+  --out         visual-qa/actual/<task>.png \
+  --type        <component|page|flow> \
+  --width       <W> \
+  --height      <H> \
+  [--mock-routes visual-qa/mocks/<task>.json] \
+  [--steps      visual-qa/steps/<task>.json]
+```
+
+**Step 4. Run diff:**
+```bash
+node .claude/skills/frontend-visual-tdd/scripts/diff.js \
+  --expected visual-qa/expected/<task>.png \
+  --actual   visual-qa/actual/<task>.png \
+  --diff     visual-qa/diff/<task>.png \
+  --threshold <value>
+```
+
+**Step 5. Interpret result:**
+- exit 1 (RED) → proceed to PHASE 2
+- exit 0 (already GREEN) → confirm with user whether work is needed
+
+*Assertion fallback:* verify selectors/text manually → any failure = RED.
+
+---
+
+### PHASE 2 — Implement (target GREEN)
+
+- Make component / CSS changes.
+- After hot reload settles, re-run PHASE 1 steps 3–4 (capture + diff).
+- Log each iteration: `iteration N — mismatch X.XXX%`
+- Iterate up to **10 times**.
+- If still RED after 10 iterations: show `visual-qa/diff/<task>.png` +
+  mismatch% to the user and stop for guidance.
+
+---
+
+### PHASE 3 — Refactor + commit
+
+- GREEN confirmed → clean up code (no functional changes).
+- Stage for commit:
+  ```
+  visual-qa/expected/    ← expected images (Figma export or baseline capture)
+  visual-qa/mocks/       ← API mock files (if any)
+  visual-qa/steps/       ← flow step files (if any)
+  visual-qa/config.json  ← thresholds
+  ```
+- Add to `.gitignore` if not already present:
+  ```
+  visual-qa/actual/
+  visual-qa/diff/
+  ```
+- Record the task in `visual-qa/config.json`:
+  ```json
+  { "tasks": { "<task-name>": { "type": "page", "threshold": 0.5 } } }
+  ```
+
+---
+
+## writing-plans integration
+
+For each frontend UI task in the plan, append this block so the executing
+agent has everything it needs without re-reading this skill:
+
+```markdown
+**[Visual TDD]**
+- Type: <component | page | flow>
+- Intent: <new | bugfix | refactor>
+- Figma node: <nodeId or "none — assertion fallback">
+- Viewport: <width>x<height>
+- Threshold: <0.1 | 0.5>%
+- API mocks: <visual-qa/mocks/<task>.json or "none">
+- Capture: node .claude/skills/frontend-visual-tdd/scripts/capture.js
+    --url http://localhost:<PORT>/<route> --out visual-qa/actual/<task>.png
+    --type <type> --width <W> --height <H> [--mock-routes ...]
+- RED check: node .claude/skills/frontend-visual-tdd/scripts/diff.js
+    --expected visual-qa/expected/<task>.png
+    --actual visual-qa/actual/<task>.png
+    --diff visual-qa/diff/<task>.png --threshold <value>
+```
+
+---
+
+## File layout
+
+```
+.claude/skills/frontend-visual-tdd/
+├── SKILL.md
+├── scripts/
+│   ├── capture.js              ← Playwright screenshot (component / page / flow)
+│   │                             supports --mock-routes for API interception
+│   ├── diff.js                 ← pixelmatch diff, exit 0=GREEN / 1=RED
+│   └── package.json            ← playwright + pixelmatch + pngjs
+└── references/
+    ├── figma-mcp.md            ← Figma MCP call patterns
+    ├── mock-routes-example.json ← API mock format (success / error / abort)
+    └── flow-steps-example.json ← interaction step format for --type flow
+
+project root (created at runtime):
+visual-qa/
+├── expected/    ← expected images             (commit)
+├── actual/      ← Playwright captures         (.gitignore)
+├── diff/        ← pixelmatch output           (.gitignore)
+├── mocks/       ← API mock JSON files         (commit)
+├── steps/       ← flow step JSON files        (commit)
+└── config.json  ← per-task thresholds         (commit)
+```
+
+---
+
+## Checklist
+
+- [ ] Task type classified (component / page / flow)
+- [ ] Task intent determined (new/bugfix/redesign → Figma or fallback | refactor → baseline capture)
+- [ ] `/dev/preview` route exists (component type only)
+- [ ] API calls identified → MSW handlers or `--mock-routes` file prepared
+- [ ] PHASE 0: expected.png saved or assertion list written
+- [ ] PHASE 1: RED confirmed
+- [ ] PHASE 2: GREEN achieved
+- [ ] PHASE 3: expected/ + mocks/ + steps/ + config.json committed
