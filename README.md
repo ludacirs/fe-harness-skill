@@ -18,7 +18,7 @@ the [Agent Skills spec](https://agentskills.io).
 > execution. Install once per project that needs it.
 
 ```bash
-npx skills add ludacirs/frontend-visual-tdd
+npx skills add ludacirs/frontend-visual-tdd-skill
 ```
 
 Then run setup once to install Playwright and Chromium:
