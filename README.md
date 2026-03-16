@@ -12,8 +12,13 @@ the [Agent Skills spec](https://agentskills.io).
 
 ## Install
 
+> **Project-level only** — do not install globally.
+> The skill instructions reference `.claude/skills/` paths relative to the
+> project root, so a global install (`~/.claude/skills/`) will break script
+> execution. Install once per project that needs it.
+
 ```bash
-npx skills add <your-github-id>/frontend-visual-tdd
+npx skills add ludacirs/frontend-visual-tdd-skill
 ```
 
 Then run setup once to install Playwright and Chromium:
