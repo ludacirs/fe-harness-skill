@@ -16,7 +16,7 @@ description: >
 
 Visual TDD for frontend UI using **Playwright screenshot diff** as the
 RED/GREEN signal. Fully standalone — all browser automation and diff logic
-are bundled in `scripts/`.
+are bundled in `scripts/` (TypeScript, run via `tsx`).
 
 ## Why unit tests aren't enough here
 
@@ -83,7 +83,7 @@ What kind of task is this?
   │
   └── Refactor / internal change (no intentional visual change)
         → capture current rendering as expected BEFORE any code change:
-          node .claude/skills/frontend-visual-tdd/scripts/capture.js \
+          npx tsx .claude/skills/frontend-visual-tdd/scripts/capture.ts \
             --url  http://localhost:<PORT>/<route> \
             --out  visual-qa/expected/<task>.png \
             --type <component|page|flow> \
@@ -120,7 +120,7 @@ Does the target make API calls?
 
 **Step 3. Capture actual screenshot:**
 ```bash
-node .claude/skills/frontend-visual-tdd/scripts/capture.js \
+npx tsx .claude/skills/frontend-visual-tdd/scripts/capture.ts \
   --url         http://localhost:<PORT>/<route> \
   --out         visual-qa/actual/<task>.png \
   --type        <component|page|flow> \
@@ -132,7 +132,7 @@ node .claude/skills/frontend-visual-tdd/scripts/capture.js \
 
 **Step 4. Run diff:**
 ```bash
-node .claude/skills/frontend-visual-tdd/scripts/diff.js \
+npx tsx .claude/skills/frontend-visual-tdd/scripts/diff.ts \
   --expected visual-qa/expected/<task>.png \
   --actual   visual-qa/actual/<task>.png \
   --diff     visual-qa/diff/<task>.png \
@@ -193,10 +193,10 @@ agent has everything it needs without re-reading this skill:
 - Viewport: <width>x<height>
 - Threshold: <0.1 | 0.5>%
 - API mocks: <visual-qa/mocks/<task>.json or "none">
-- Capture: node .claude/skills/frontend-visual-tdd/scripts/capture.js
+- Capture: npx tsx .claude/skills/frontend-visual-tdd/scripts/capture.ts
     --url http://localhost:<PORT>/<route> --out visual-qa/actual/<task>.png
     --type <type> --width <W> --height <H> [--mock-routes ...]
-- RED check: node .claude/skills/frontend-visual-tdd/scripts/diff.js
+- RED check: npx tsx .claude/skills/frontend-visual-tdd/scripts/diff.ts
     --expected visual-qa/expected/<task>.png
     --actual visual-qa/actual/<task>.png
     --diff visual-qa/diff/<task>.png --threshold <value>
@@ -210,10 +210,10 @@ agent has everything it needs without re-reading this skill:
 .claude/skills/frontend-visual-tdd/
 ├── SKILL.md
 ├── scripts/
-│   ├── capture.js              ← Playwright screenshot (component / page / flow)
+│   ├── capture.ts              ← Playwright screenshot (component / page / flow)
 │   │                             supports --mock-routes for API interception
-│   ├── diff.js                 ← pixelmatch diff, exit 0=GREEN / 1=RED
-│   └── package.json            ← playwright + pixelmatch + pngjs
+│   ├── diff.ts                 ← pixelmatch diff, exit 0=GREEN / 1=RED
+│   └── package.json            ← playwright + pixelmatch + pngjs + tsx
 └── references/
     ├── figma-mcp.md            ← Figma MCP call patterns
     ├── mock-routes-example.json ← API mock format (success / error / abort)

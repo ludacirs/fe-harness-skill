@@ -3,12 +3,18 @@
   "version": "1.0.0",
   "type": "module",
   "description": "Standalone visual TDD scripts — Playwright screenshot capture + pixelmatch diff",
+  "engines": {
+    "node": ">=18"
+  },
   "scripts": {
-    "setup": "npm install && npx playwright install chromium --with-deps"
+    "setup": "npm install && npx playwright install chromium --with-deps",
+    "capture": "tsx capture.ts",
+    "diff": "tsx diff.ts"
   },
   "dependencies": {
     "pixelmatch": "^6.0.0",
     "playwright": "^1.40.0",
-    "pngjs": "^7.0.0"
+    "pngjs": "^7.0.0",
+    "tsx": "^4.0.0"
   }
 }
