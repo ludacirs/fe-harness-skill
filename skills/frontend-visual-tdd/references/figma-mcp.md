@@ -33,14 +33,14 @@ Fetch the returned URL and save to `visual-qa/expected/<task-name>.png`.
 
 ## Matching viewport dimensions
 
-Always match the Figma frame size to playwright-skill's capture viewport:
+Always match the Figma frame size to capture.ts's viewport:
 
 ```js
 mcp__figma__get_file({ fileKey: "..." })
 // → document.children[N].absoluteBoundingBox: { width, height }
 ```
 
-Pass those values when invoking playwright-skill for the screenshot capture.
+Pass those values as --width/--height when running capture.ts.
 
 ## Common calls
 
