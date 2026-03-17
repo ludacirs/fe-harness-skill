@@ -9,7 +9,8 @@ description: >
   a real RED signal because the agent writes code and tests simultaneously.
   This skill replaces that signal with a Playwright screenshot diff (pixelmatch)
   as the true RED/GREEN gate. Fully standalone — no other skills required.
-  Figma MCP extracts expected images automatically when connected.
+  Figma MCP provides design specs (tokens, properties); Figma REST API
+  (`figma-export.ts`) downloads expected images for pixel diff.
 ---
 
 # Frontend Visual TDD
@@ -76,14 +77,8 @@ First, determine the task intent:
 What kind of task is this?
   │
   ├── New implementation / visual bug fix / redesign
-  │     └── Figma MCP connected?
-  │           ├── Yes → find frame/component nodeId
-  │           │         → run figma-export.ts to download expected image:
-  │           │           export FIGMA_TOKEN=<TOKEN>   # or set in .env
-  │           │           npx tsx .claude/skills/frontend-visual-tdd/scripts/figma-export.ts \
-  │           │             --file-key <FILE_KEY> --node-ids <NODE_ID> \
-  │           │             --out visual-qa/expected --scale 1
-  │           │         → note Figma frame width × height for viewport match
+  │     └── Figma available?
+  │           ├── Yes → Step A + Step B below
   │           └── No  → manual: export PNG from Figma UI → save to visual-qa/expected/
   │                     or assertion fallback (write selector/text list; skip diff)
   │
@@ -97,7 +92,33 @@ What kind of task is this?
           If diff > threshold after changes → unintended visual regression.
 ```
 
-See `references/figma-mcp.md` for nodeId lookup and image extraction.
+**Step A — Design spec via Figma MCP (`get_design_context`)**
+
+Use Figma MCP to gather design tokens, colors, fonts, spacing, and component
+structure. The inline screenshot returned by MCP is for visual reference in the
+conversation only — it **cannot** be saved as a file.
+
+```
+mcp__figma__get_design_context({ fileKey, nodeId })
+→ design tokens, component props, inline screenshot (reference only)
+```
+
+**Step B — Expected image via Figma REST API (`figma-export.ts`)**
+
+> **IMPORTANT:** Do NOT use MCP tools to download expected images.
+> MCP inline screenshots are rendered in the conversation but cannot be saved
+> to disk as PNG files. Always use `figma-export.ts` (REST API) instead.
+
+```bash
+export FIGMA_TOKEN=<TOKEN>   # or set in .env
+npx tsx .claude/skills/frontend-visual-tdd/scripts/figma-export.ts \
+  --file-key <FILE_KEY> --node-ids <NODE_ID> \
+  --out visual-qa/expected --scale 1
+```
+
+Note the Figma frame width × height for viewport matching in capture.ts.
+
+See `references/figma-reference.md` for nodeId lookup and detailed usage.
 
 > **Scale matching:** Expected and actual images must have the same pixel
 > dimensions. Use `--scale 1` in figma-export.ts (default) to match
@@ -264,9 +285,10 @@ agent has everything it needs without re-reading this skill:
 │   ├── capture.ts              ← Playwright screenshot (component / page / flow)
 │   │                             supports --mock-routes for API interception
 │   ├── diff.ts                 ← pixelmatch diff, exit 0=GREEN / 1=RED
+│   ├── figma-export.ts         ← Figma REST API image download
 │   └── package.json            ← playwright + pixelmatch + pngjs + tsx
 └── references/
-    ├── figma-mcp.md            ← Figma MCP call patterns
+    ├── figma-reference.md      ← Figma MCP (spec) + REST API (image) roles
     ├── mock-routes-example.json ← API mock format (success / error / abort)
     └── flow-steps-example.json ← interaction step format for --type flow
 
