@@ -79,10 +79,9 @@ What kind of task is this?
   │     └── Figma MCP connected?
   │           ├── Yes → find frame/component nodeId
   │           │         → run figma-export.ts to download expected image:
-  │           │           npx tsx .claude/skills/frontend-visual-tdd/scripts/figma-export.ts \
+  │           │           FIGMA_TOKEN=<TOKEN> npx tsx .claude/skills/frontend-visual-tdd/scripts/figma-export.ts \
   │           │             --file-key <FILE_KEY> --node-ids <NODE_ID> \
-  │           │             --token <FIGMA_TOKEN> --out visual-qa/expected \
-  │           │             --scale 1
+  │           │             --out visual-qa/expected --scale 1
   │           │         → note Figma frame width × height for viewport match
   │           └── No  → manual: export PNG from Figma UI → save to visual-qa/expected/
   │                     or assertion fallback (write selector/text list; skip diff)

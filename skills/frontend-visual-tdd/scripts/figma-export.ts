@@ -6,12 +6,12 @@
  * This script calls the Figma REST API directly to save images as files.
  *
  * Usage:
- *   npx tsx figma-export.ts --file-key <key> --node-ids <id,...> --token <token> --out <dir> [options]
+ *   FIGMA_TOKEN=<token> npx tsx figma-export.ts --file-key <key> --node-ids <id,...> --out <dir> [options]
  *
  * Options:
  *   --file-key   Figma file key (required)
  *   --node-ids   Comma-separated node IDs, e.g. "123:456,789:012" (required)
- *   --token      Figma Personal Access Token (required)
+ *   --token      Figma Personal Access Token (fallback; prefer FIGMA_TOKEN env var)
  *   --out        Output directory, e.g. visual-qa/expected (required)
  *   --scale      Image scale factor (default: 1)
  *   --format     png | jpg | svg | pdf (default: png)
@@ -41,24 +41,38 @@ const { values } = parseArgs({
 
 const args = values as Record<string, string | undefined>;
 
-if (!args['file-key'] || !args['node-ids'] || !args.token || !args.out) {
-  console.error('Usage: npx tsx figma-export.ts --file-key <key> --node-ids <id,...> --token <token> --out <dir>');
+if (!args['file-key'] || !args['node-ids'] || !args.out) {
+  console.error('Usage: FIGMA_TOKEN=<token> npx tsx figma-export.ts --file-key <key> --node-ids <id,...> --out <dir>');
   process.exit(1);
 }
 
 const fileKey = args['file-key'];
 const nodeIds = args['node-ids'].split(',').map((id) => id.trim());
-const token   = args.token.trim();
+const token   = (args.token ?? process.env.FIGMA_TOKEN ?? '').trim();
 const outDir  = args.out;
 const scale   = args.scale ?? '1';
 const format  = args.format ?? 'png';
+
+const VALID_FORMATS = ['png', 'jpg', 'svg', 'pdf'];
+if (!VALID_FORMATS.includes(format)) {
+  console.error(`[ERROR] Invalid format "${format}". Must be one of: ${VALID_FORMATS.join(', ')}`);
+  process.exit(1);
+}
+
+if (!token) {
+  console.error('Error: Figma token required. Set FIGMA_TOKEN env var or pass --token <token>');
+  process.exit(1);
+}
 
 if (!existsSync(outDir)) mkdirSync(outDir, { recursive: true });
 
 // --- Figma API ---
 
-const idsParam = nodeIds.join(',');
-const apiUrl = `https://api.figma.com/v1/images/${fileKey}?ids=${idsParam}&format=${format}&scale=${scale}`;
+const apiUrlObj = new URL(`https://api.figma.com/v1/images/${encodeURIComponent(fileKey)}`);
+apiUrlObj.searchParams.set('ids', nodeIds.join(','));
+apiUrlObj.searchParams.set('format', format);
+apiUrlObj.searchParams.set('scale', scale);
+const apiUrl = apiUrlObj.toString();
 
 console.log(`[figma] Requesting images for ${nodeIds.length} node(s)...`);
 
