@@ -78,10 +78,13 @@ What kind of task is this?
   ├── New implementation / visual bug fix / redesign
   │     └── Figma MCP connected?
   │           ├── Yes → find frame/component nodeId
-  │           │         → mcp__figma__get_images
-  │           │         → save to visual-qa/expected/<task>.png
+  │           │         → run figma-export.ts to download expected image:
+  │           │           FIGMA_TOKEN=<TOKEN> npx tsx .claude/skills/frontend-visual-tdd/scripts/figma-export.ts \
+  │           │             --file-key <FILE_KEY> --node-ids <NODE_ID> \
+  │           │             --out visual-qa/expected --scale 1
   │           │         → note Figma frame width × height for viewport match
-  │           └── No  → assertion fallback (write selector/text list; skip diff)
+  │           └── No  → manual: export PNG from Figma UI → save to visual-qa/expected/
+  │                     or assertion fallback (write selector/text list; skip diff)
   │
   └── Refactor / internal change (no intentional visual change)
         → capture current rendering as expected BEFORE any code change:
