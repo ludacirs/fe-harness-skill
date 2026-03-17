@@ -66,7 +66,7 @@ if (!token) {
 
 if (!token.startsWith('figd_')) {
   console.error('[ERROR] Invalid token format — Figma Personal Access Tokens start with "figd_".');
-  console.error('→ Check for extra characters from copy-paste. Current token starts with: ' + token.slice(0, 8) + '...');
+  console.error('→ Check for extra characters from copy-paste. Current token starts with: ' + token.slice(0, 5) + '...');
   process.exit(1);
 }
 
