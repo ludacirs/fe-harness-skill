@@ -98,6 +98,13 @@ What kind of task is this?
 
 See `references/figma-mcp.md` for nodeId lookup and image extraction.
 
+> **Scale matching:** Expected and actual images must have the same pixel
+> dimensions. Use `--scale 1` in figma-export.ts (default) to match
+> Playwright's default deviceScaleFactor of 1. If you need 2x resolution,
+> set both: `figma-export.ts --scale 2` and `capture.ts --device-scale-factor 2`.
+> Mismatched scales cause inflated diff percentages (e.g., 76%) due to
+> resize artifacts and anti-aliasing.
+
 ---
 
 ### PHASE 1 — Confirm RED
