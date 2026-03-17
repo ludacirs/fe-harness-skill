@@ -131,6 +131,14 @@ Does the target make API calls?
               For component type, register mocks in .preview file.
 ```
 
+> **MSW handler URL matching:** When overriding handlers with `worker.use()`,
+> use the `*` glob prefix to match regardless of host:
+> ```ts
+> worker.use(http.get('*/your/endpoint', handler))
+> ```
+> This avoids mismatches between path-only (`/api/...`) and full-URL
+> (`http://localhost:3000/api/...`) registrations in existing handlers.
+
 > **localStorage-based stores:** Stores that read `localStorage` at module load
 > time will initialize **before** `onMount` or `addInitScript` can set values.
 > In the preview file, set store state directly via the store's API (e.g.,
