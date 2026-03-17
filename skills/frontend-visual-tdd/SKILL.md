@@ -108,16 +108,27 @@ npx wait-on http://localhost:<PORT>
 **Step 2. Handle API calls (if any):**
 ```
 Does the target make API calls?
-  ├── component type → use MSW handlers in .preview.tsx (preferred)
-  │                    no --mock-routes needed
   │
-  ├── page / flow type → create a mock routes file and pass it to capture:
-  │     --mock-routes visual-qa/mocks/<task>.json
-  │     See references/mock-routes-example.json for format.
-  │     Mock every API call the page makes — unmocked calls cause
-  │     networkidle to hang or render incomplete state.
+  ├── no API calls → proceed without mocking
   │
-  └── no API calls → proceed without --mock-routes
+  └── yes → Does the project use MSW?
+        │   (Check: `msw` in package.json or `mockServiceWorker.js` in public/)
+        │
+        ├── MSW active
+        │   ⚠ --mock-routes does NOT work when MSW is active.
+        │     (MSW intercepts at Service Worker level, before Playwright's
+        │      network-level route() can see the request.)
+        │
+        │   ├── component type → use worker.use() in .preview file to override handlers
+        │   └── page/flow type → modify the project's MSW handlers directly
+        │         (e.g., src/mocks/handlers.ts) or add conditional overrides
+        │
+        └── no MSW → use --mock-routes for page/flow types:
+              --mock-routes visual-qa/mocks/<task>.json
+              See references/mock-routes-example.json for format.
+              Mock every API call the page makes — unmocked calls cause
+              networkidle to hang or render incomplete state.
+              For component type, register mocks in .preview file.
 ```
 
 > **localStorage-based stores:** Stores that read `localStorage` at module load
