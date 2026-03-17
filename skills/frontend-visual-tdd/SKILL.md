@@ -118,6 +118,12 @@ Does the target make API calls?
   └── no API calls → proceed without --mock-routes
 ```
 
+> **localStorage-based stores:** Stores that read `localStorage` at module load
+> time will initialize **before** `onMount` or `addInitScript` can set values.
+> In the preview file, set store state directly via the store's API (e.g.,
+> `store.set(...)`, `store.rehydrate()`) rather than writing to `localStorage`
+> after mount.
+
 **Step 3. Capture actual screenshot:**
 ```bash
 npx tsx .claude/skills/frontend-visual-tdd/scripts/capture.ts \
