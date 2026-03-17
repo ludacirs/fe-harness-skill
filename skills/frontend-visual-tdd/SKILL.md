@@ -55,12 +55,14 @@ Classify the task **before doing anything else**.
 If unclear, ask the user once.
 
 > **`/dev/preview` route:** If the project has no isolated render route for
-> components, create a minimal one first.
+> components, create a minimal one first. Follow the project's routing conventions:
 > - URL pattern: `/dev/preview?component=<ComponentName>`
-> - File layout: `src/dev/PreviewPage.tsx` + `src/dev/previews/<Name>.preview.tsx`
-> - Guard with `if (import.meta.env.DEV)` in the router
-> - For components with API calls: register MSW handlers in the `.preview.tsx`
->   file instead of using `--mock-routes` (keeps mock data co-located with the preview)
+> - Place the route **outside auth layout groups** so no login/session is required
+> - Add a **dev-only guard** so the route is inaccessible in production
+>   (e.g., `import.meta.env.DEV`, `process.env.NODE_ENV`, or the framework's equivalent)
+> - Separate preview wrappers per component (e.g., `<Name>.preview.*`)
+> - For components with API calls: register MSW handlers in the preview file
+>   instead of using `--mock-routes` (keeps mock data co-located with the preview)
 
 ---
 
