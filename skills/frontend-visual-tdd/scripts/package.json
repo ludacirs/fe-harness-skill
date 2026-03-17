@@ -9,7 +9,8 @@
   "scripts": {
     "setup": "npm install && npx playwright install chromium --with-deps",
     "capture": "tsx capture.ts",
-    "diff": "tsx diff.ts"
+    "diff": "tsx diff.ts",
+    "figma-export": "tsx figma-export.ts"
   },
   "dependencies": {
     "pixelmatch": "^6.0.0",
