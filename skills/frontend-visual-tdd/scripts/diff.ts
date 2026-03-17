@@ -96,6 +96,12 @@ const mismatchPx: number = pixelmatch(
 const totalPx: number     = width * height;
 const mismatchPct: number = (mismatchPx / totalPx) * 100;
 const threshold: number   = parseFloat(args.threshold ?? '0.5');
+
+if (isNaN(threshold) || threshold < 0) {
+  console.error(`[ERROR] Invalid threshold value: "${args.threshold}". Must be a non-negative number.`);
+  process.exit(2);
+}
+
 const isGreen: boolean    = mismatchPct <= threshold;
 
 const diffDir = dirname(diffPath);
