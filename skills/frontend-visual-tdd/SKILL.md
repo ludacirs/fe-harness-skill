@@ -55,32 +55,14 @@ Classify the task **before doing anything else**.
 If unclear, ask the user once.
 
 > **`/dev/preview` route:** If the project has no isolated render route for
-> components, create a minimal one first. The pattern varies by framework:
->
-> **React (Vite / CRA)**
+> components, create a minimal one first. Follow the project's routing conventions:
 > - URL pattern: `/dev/preview?component=<ComponentName>`
-> - File layout: `src/dev/PreviewPage.tsx` + `src/dev/previews/<Name>.preview.tsx`
-> - Guard with `if (import.meta.env.DEV)` in the router
->
-> **Next.js (App Router)**
-> - URL pattern: `/dev/preview?component=<ComponentName>`
-> - File layout: `src/app/dev/preview/page.tsx` + `src/dev/previews/<Name>.preview.tsx`
-> - Guard: `if (process.env.NODE_ENV !== 'development') { notFound() }`
->
-> **Next.js (Pages Router)**
-> - URL pattern: `/dev/preview?component=<ComponentName>`
-> - File layout: `src/pages/dev/preview.tsx` + `src/dev/previews/<Name>.preview.tsx`
-> - Guard: `if (process.env.NODE_ENV !== 'development') { return { notFound: true } }` in `getServerSideProps`
->
-> **SvelteKit**
-> - URL pattern: `/dev/preview?component=<ComponentName>`
-> - File layout: `src/routes/dev/preview/+page.svelte` + `src/dev/previews/<Name>.preview.svelte`
-> - Guard: `if (!import.meta.env.DEV) { throw redirect(307, '/') }` in `+page.ts` load function
->
-> **Common to all frameworks:**
+> - Place the route **outside auth layout groups** so no login/session is required
+> - Add a **dev-only guard** so the route is inaccessible in production
+>   (e.g., `import.meta.env.DEV`, `process.env.NODE_ENV`, or the framework's equivalent)
+> - Separate preview wrappers per component (e.g., `<Name>.preview.*`)
 > - For components with API calls: register MSW handlers in the preview file
 >   instead of using `--mock-routes` (keeps mock data co-located with the preview)
-> - The preview route must bypass auth layouts — place it outside auth route groups
 
 ---
 
