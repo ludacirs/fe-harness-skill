@@ -60,7 +60,13 @@ if (!VALID_FORMATS.includes(format)) {
 }
 
 if (!token) {
-  console.error('Error: Figma token required. Set FIGMA_TOKEN env var or pass --token <token>');
+  console.error('[ERROR] Figma token required. Set FIGMA_TOKEN env var or pass --token <token>');
+  process.exit(1);
+}
+
+if (!token.startsWith('figd_')) {
+  console.error('[ERROR] Invalid token format — Figma Personal Access Tokens start with "figd_".');
+  console.error('→ Check for extra characters from copy-paste. Current token starts with: ' + token.slice(0, 8) + '...');
   process.exit(1);
 }
 
