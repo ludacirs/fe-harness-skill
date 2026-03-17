@@ -48,6 +48,7 @@ const { chromium } = await import('playwright');
 // --- Types ---
 
 interface FlowStep {
+  _comment?: string;
   click?: string;
   fill?: { selector: string; value: string };
   waitFor?: string;
@@ -56,6 +57,7 @@ interface FlowStep {
 }
 
 interface MockRoute {
+  _comment?: string;
   pattern: string;
   abort?: boolean;
   status?: number;
@@ -109,6 +111,35 @@ if (captureType === 'flow' && !stepsPath) {
   process.exit(1);
 }
 
+const VALID_TYPES = ['component', 'page', 'flow'] as const;
+if (!VALID_TYPES.includes(captureType as typeof VALID_TYPES[number])) {
+  console.error(`[ERROR] Invalid type "${captureType}". Must be one of: ${VALID_TYPES.join(', ')}`);
+  process.exit(1);
+}
+
+// Parse JSON files before launching browser to avoid browser leak on parse errors
+let mockRoutes: MockRoute[] | undefined;
+if (mockRoutesPath) {
+  try {
+    mockRoutes = JSON.parse(readFileSync(mockRoutesPath, 'utf-8'));
+  } catch (e) {
+    console.error(`[ERROR] Failed to parse mock-routes JSON: ${mockRoutesPath}`);
+    console.error(String(e));
+    process.exit(1);
+  }
+}
+
+let flowSteps: FlowStep[] | undefined;
+if (captureType === 'flow' && stepsPath) {
+  try {
+    flowSteps = JSON.parse(readFileSync(stepsPath, 'utf-8'));
+  } catch (e) {
+    console.error(`[ERROR] Failed to parse flow steps JSON: ${stepsPath}`);
+    console.error(String(e));
+    process.exit(1);
+  }
+}
+
 const outDir = dirname(out);
 if (!existsSync(outDir)) mkdirSync(outDir, { recursive: true });
 
@@ -122,8 +153,7 @@ try {
 
   // --- API route mocking (page/flow types) ---
   // For component type, prefer MSW handlers in .preview.tsx instead.
-  if (mockRoutesPath) {
-    const mockRoutes: MockRoute[] = JSON.parse(readFileSync(mockRoutesPath, 'utf-8'));
+  if (mockRoutes) {
     for (const mock of mockRoutes) {
       await page.route(mock.pattern, async (route) => {
         if (mock.abort) {
@@ -140,13 +170,10 @@ try {
     console.log(`[mock] ${mockRoutes.length} route(s) intercepted`);
   }
 
-  await page.goto(url);
-  await page.waitForLoadState(waitState);
+  await page.goto(url, { waitUntil: waitState });
 
   if (captureType === 'flow') {
-    const steps: FlowStep[] = JSON.parse(readFileSync(stepsPath!, 'utf-8'));
-
-    for (const [i, step] of steps.entries()) {
+    for (const [i, step] of flowSteps!.entries()) {
       const padded  = String(i + 1).padStart(2, '0');
       const stepOut = out.replace(/(\.\w+)$/, `-step-${padded}$1`);
       const stepDir = dirname(stepOut);
