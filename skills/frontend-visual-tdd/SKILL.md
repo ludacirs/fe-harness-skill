@@ -79,7 +79,8 @@ What kind of task is this?
   │     └── Figma MCP connected?
   │           ├── Yes → find frame/component nodeId
   │           │         → run figma-export.ts to download expected image:
-  │           │           FIGMA_TOKEN=<TOKEN> npx tsx .claude/skills/frontend-visual-tdd/scripts/figma-export.ts \
+  │           │           export FIGMA_TOKEN=<TOKEN>   # or set in .env
+  │           │           npx tsx .claude/skills/frontend-visual-tdd/scripts/figma-export.ts \
   │           │             --file-key <FILE_KEY> --node-ids <NODE_ID> \
   │           │             --out visual-qa/expected --scale 1
   │           │         → note Figma frame width × height for viewport match
@@ -104,6 +105,19 @@ See `references/figma-mcp.md` for nodeId lookup and image extraction.
 > set both: `figma-export.ts --scale 2` and `capture.ts --device-scale-factor 2`.
 > Mismatched scales cause inflated diff percentages (e.g., 76%) due to
 > resize artifacts and anti-aliasing.
+
+> **Full page vs content area comparison:**
+> Figma expected images may include the full layout (nav, sidebar) while the
+> preview only renders the content area. Choose a strategy based on what's
+> available:
+> - **Content node exists in Figma** → export that node's nodeId directly,
+>   set capture.ts viewport to match its dimensions. No cropping needed.
+> - **Only full page frame available** → include the layout in the
+>   preview (mock auth store, add nav/sidebar) so the capture matches the
+>   Figma frame structurally.
+>
+> Do not add a `--selector` cropping option — element boundaries shift
+> with dynamic content, making selector-based diffs unreliable.
 
 ---
 
