@@ -112,12 +112,16 @@ Does the target make API calls?
   ├── no API calls → proceed without mocking
   │
   └── yes → Does the project use MSW?
+        │   (Check: `msw` in package.json or `mockServiceWorker.js` in public/)
         │
-        ├── MSW active → use worker.use() in preview file to override handlers.
+        ├── MSW active
         │   ⚠ --mock-routes does NOT work when MSW is active.
         │     (MSW intercepts at Service Worker level, before Playwright's
         │      network-level route() can see the request.)
-        │   This applies to ALL task types (component, page, flow).
+        │
+        │   ├── component type → use worker.use() in .preview file to override handlers
+        │   └── page/flow type → modify the project's MSW handlers directly
+        │         (e.g., src/mocks/handlers.ts) or add conditional overrides
         │
         └── no MSW → use --mock-routes for page/flow types:
               --mock-routes visual-qa/mocks/<task>.json
