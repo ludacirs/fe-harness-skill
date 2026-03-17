@@ -43,7 +43,6 @@ try {
   process.exit(1);
 }
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports -- dynamic guard
 const { chromium } = await import('playwright');
 
 // --- Types ---
@@ -126,7 +125,7 @@ try {
   if (mockRoutesPath) {
     const mockRoutes: MockRoute[] = JSON.parse(readFileSync(mockRoutesPath, 'utf-8'));
     for (const mock of mockRoutes) {
-      await page.route(mock.pattern, async (route: { abort: () => Promise<void>; fulfill: (opts: Record<string, unknown>) => Promise<void> }) => {
+      await page.route(mock.pattern, async (route) => {
         if (mock.abort) {
           await route.abort();
           return;
