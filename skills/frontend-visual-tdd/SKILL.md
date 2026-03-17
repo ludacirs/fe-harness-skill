@@ -104,12 +104,12 @@ See `references/figma-mcp.md` for nodeId lookup and image extraction.
 > available:
 > - **Content node exists in Figma** → export that node's nodeId directly,
 >   set capture.ts viewport to match its dimensions. No cropping needed.
-> - **Only full page frame available** → either include the layout in the
->   preview (mock auth store, add nav/sidebar), or raise the diff threshold
->   to account for layout differences.
+> - **Only full page frame available** → include the layout in the
+>   preview (mock auth store, add nav/sidebar) so the capture matches the
+>   Figma frame structurally.
 >
-> Avoid using `--selector` to crop content areas — element boundaries shift
-> with dynamic content, causing unreliable diffs.
+> Do not add a `--selector` cropping option — element boundaries shift
+> with dynamic content, making selector-based diffs unreliable.
 
 ---
 
