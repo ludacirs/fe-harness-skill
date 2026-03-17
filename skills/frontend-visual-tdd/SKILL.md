@@ -98,6 +98,19 @@ What kind of task is this?
 
 See `references/figma-mcp.md` for nodeId lookup and image extraction.
 
+> **Full page vs content area comparison:**
+> Figma expected images may include the full layout (nav, sidebar) while the
+> preview only renders the content area. Choose a strategy based on what's
+> available:
+> - **Content node exists in Figma** → export that node's nodeId directly,
+>   set capture.ts viewport to match its dimensions. No cropping needed.
+> - **Only full page frame available** → include the layout in the
+>   preview (mock auth store, add nav/sidebar) so the capture matches the
+>   Figma frame structurally.
+>
+> Do not add a `--selector` cropping option — element boundaries shift
+> with dynamic content, making selector-based diffs unreliable.
+
 ---
 
 ### PHASE 1 — Confirm RED
