@@ -32,10 +32,11 @@ import { dirname } from 'path';
 import { parseArgs } from 'util';
 import { createRequire } from 'module';
 
-// Guard: check playwright is installed before proceeding
+// Resolve playwright from the script's own node_modules (not caller's cwd)
 const require = createRequire(import.meta.url);
+let playwrightPath!: string;
 try {
-  require.resolve('playwright');
+  playwrightPath = require.resolve('playwright');
 } catch {
   const skillDir = new URL('../', import.meta.url).pathname;
   console.error('[ERROR] playwright is not installed.');
@@ -43,7 +44,7 @@ try {
   process.exit(1);
 }
 
-const { chromium } = await import('playwright');
+const { chromium } = await import(playwrightPath);
 
 // --- Types ---
 
