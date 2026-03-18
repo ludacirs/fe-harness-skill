@@ -42,10 +42,14 @@ These are absolute. There are no exceptions. "Simple" tasks, "obvious" implement
 
 ## Mandatory Progress Tracking
 
-At the start of PHASE 0, create TodoWrite tasks for every phase:
+At the start of PHASE 0, create TodoWrite tasks for every phase.
+**PHASE 0 has sub-tasks** — each sub-task gets its own todo so nothing is skipped:
 
 ```
-- [ ] PHASE 0: Context & Spec — Figma export + interaction spec + user confirmation
+- [ ] PHASE 0-1: Figma MCP — get_design_context for design tokens and dimensions
+- [ ] PHASE 0-2: Figma REST API — download expected images via figma-export.ts → verify files in visual-qa/expected/
+- [ ] PHASE 0-3: Interaction Spec — generate from design context + task description
+- [ ] PHASE 0-STOP: Present spec + verify images downloaded → user confirmation
 - [ ] PHASE 1: Classify — task type + user confirmation
 - [ ] PHASE 2: Interaction TDD — RED (all tests fail) → GREEN (all tests pass) + user confirmation
 - [ ] PHASE 3: Visual Verification — Figma vs Browser comparison + user confirmation
@@ -109,17 +113,25 @@ cd skills/fe-harness/scripts && npm run setup
 
 ## PHASE 0 — Context & Spec
 
-1. **Figma design spec** — call `mcp__figma__get_design_context({ fileKey, nodeId })` to get tokens, spacing, structure, and frame dimensions.
+### 0-1. Figma design spec
+Call `mcp__figma__get_design_context({ fileKey, nodeId })` to get tokens, spacing, structure, and frame dimensions. Note the `fileKey` and `nodeId` — you will need them in the next step.
 
-2. **Figma expected image** — download via REST API:
-   ```bash
-   npx tsx skills/fe-harness/scripts/figma-export.ts \
-     --file-key <FILE_KEY> --node-ids <NODE_ID> \
-     --out visual-qa/expected --scale 1
-   ```
-   See [references/figma-reference.md](references/figma-reference.md) for nodeId and scale details.
+### 0-2. Figma expected image (MANDATORY — do NOT skip)
+Download the expected image via REST API. This is a **separate step** from 0-1 — MCP inline screenshots cannot be saved to disk.
 
-3. **Generate interaction spec** — synthesize Figma + task description into:
+```bash
+npx tsx skills/fe-harness/scripts/figma-export.ts \
+  --file-key <FILE_KEY> --node-ids <NODE_ID> \
+  --out visual-qa/expected --scale 1
+```
+
+See [references/figma-reference.md](references/figma-reference.md) for nodeId and scale details.
+
+> **Verify:** run `ls visual-qa/expected/` and confirm PNG files exist before continuing.
+> If this step fails (missing token, API error), **stop and ask the user** — do NOT skip to spec generation.
+
+### 0-3. Generate interaction spec
+Synthesize Figma + task description into:
    - Initial state (what user sees on load)
    - Interactions (action → expected result)
    - Edge cases (error, empty, loading)
@@ -127,9 +139,18 @@ cd skills/fe-harness/scripts && npm run setup
 
    See [references/spec-template.md](references/spec-template.md) for full template.
 
-4. **Clarify unknowns** — ask the user when: no state variants in Figma, unclear post-click behavior, unknown API handling, unclear conditional rendering.
+### 0-4. Clarify unknowns
+Ask the user when: no state variants in Figma, unclear post-click behavior, unknown API handling, unclear conditional rendering.
 
-### STOP — present spec and ask:
+### STOP — verify deliverables, then present:
+
+Before presenting to the user, verify Phase 0 outputs:
+```bash
+ls visual-qa/expected/
+```
+**If no files exist, you skipped Step 0-2. Go back and run `figma-export.ts` now.**
+
+Then present spec and ask:
 > "Spec이 맞는지 확인해주세요. 수정할 부분이 있으면 알려주세요."
 
 **Do NOT proceed until the user confirms.**
