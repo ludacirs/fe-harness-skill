@@ -307,7 +307,7 @@ Use the `fileKey` and `nodeId` saved from PHASE 0 (or from the Figma URL if styl
 
 ```bash
 export FIGMA_TOKEN=<TOKEN>   # or set in .env
-npx tsx skills/fe-harness/scripts/figma-export.ts \
+npx tsx ~/.claude/skills/fe-harness/scripts/figma-export.ts \
   --file-key <FILE_KEY> --node-ids <NODE_ID> \
   --out visual-qa/expected --scale 1
 ```
@@ -341,12 +341,15 @@ npx wait-on http://localhost:<PORT>
 ### Step 2. Capture screenshot
 
 ```bash
-npx tsx skills/fe-harness/scripts/capture.ts \
+npx tsx ~/.claude/skills/fe-harness/scripts/capture.ts \
   --url  http://localhost:<PORT>/<route-or-preview> \
   --out  visual-qa/actual/<task>.png \
   --type <component|page|flow> \
   --width <W> --height <H>
 ```
+
+> Scripts resolve relative paths (like `--out visual-qa/actual/...`) against your
+> current working directory. No `cd` or `NODE_PATH` needed.
 
 Width/height must match the Figma frame dimensions saved from PHASE 0.
 
@@ -410,7 +413,7 @@ visual-qa/diff/
 After baseline is established, future tasks can run:
 
 ```bash
-npx tsx skills/fe-harness/scripts/diff.ts \
+npx tsx ~/.claude/skills/fe-harness/scripts/diff.ts \
   --expected visual-qa/expected/<task>-baseline.png \
   --actual   visual-qa/actual/<task>.png \
   --diff     visual-qa/diff/<task>.png \
