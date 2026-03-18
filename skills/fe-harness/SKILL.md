@@ -229,6 +229,12 @@ npx playwright test e2e/<task>.spec.ts
 
 All tests must fail. If any pass unexpectedly, investigate.
 
+>>> HARD GATE: Do NOT proceed to implementation until ALL tests have been run and confirmed FAILING (RED). <<<
+
+- [ ] `npx playwright test e2e/<task>.spec.ts` executed
+- [ ] All tests FAIL (RED confirmed)
+- [ ] If tests cannot run (environment issue), fix the environment FIRST — do NOT skip to implementation
+
 ### Step 4. Implement → GREEN
 
 Implement the component/page/flow. Run tests after each significant change.
@@ -246,7 +252,11 @@ Stall counter reaches 3 → stop and escalate to human:
 
 ### Workflow A complete
 
-All interaction tests GREEN. Proceed to **Workflow B**.
+>>> HARD GATE: Do NOT proceed to Workflow B until ALL interaction tests PASS. <<<
+
+- [ ] `npx playwright test e2e/<task>.spec.ts` executed
+- [ ] All tests PASS (GREEN confirmed — 0 failures)
+- [ ] If any test fails, fix implementation FIRST — do NOT skip to Visual TDD
 
 ---
 
