@@ -310,8 +310,12 @@ Width/height must match the Figma frame dimensions saved from PHASE 0.
 
 ### Step 3. Compare with Figma (Claude visual comparison — local files only)
 
-> Figma vs browser → use Claude visual comparison, not diff.ts (see Gotchas).
-> Do NOT call Figma MCP here. Use the downloaded file from PHASE 3.
+> **NEVER use `diff.ts` for Figma-vs-browser comparison.** Pixel-level diffing
+> across different rendering engines (Figma vs Chromium) produces false positives
+> due to font rendering, anti-aliasing, and sub-pixel differences. `diff.ts` is
+> for browser-vs-browser regression ONLY (PHASE 5).
+>
+> **NEVER call Figma MCP here.** Use the downloaded file from PHASE 3.
 
 Present both **local** images to Claude for comparison:
 1. `visual-qa/expected/<task>.png` (downloaded from Figma REST API in PHASE 3)
