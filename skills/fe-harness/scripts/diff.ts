@@ -17,22 +17,8 @@
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'fs';
 import { dirname } from 'path';
 import { parseArgs } from 'util';
-import { createRequire } from 'module';
-
-// Guard: check deps are installed before proceeding
-const require = createRequire(import.meta.url);
-const missing = ['pixelmatch', 'pngjs'].filter((pkg) => {
-  try { require.resolve(pkg); return false; } catch { return true; }
-});
-if (missing.length > 0) {
-  const skillDir = new URL('../', import.meta.url).pathname;
-  console.error(`[ERROR] missing packages: ${missing.join(', ')}`);
-  console.error(`→ Run: cd ${skillDir}scripts && npm run setup`);
-  process.exit(2);
-}
-
-const pixelmatch = (await import('pixelmatch')).default;
-const { PNG }    = await import('pngjs');
+import pixelmatch from 'pixelmatch';
+import { PNG } from 'pngjs';
 
 // --- Args ---
 

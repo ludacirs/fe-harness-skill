@@ -35,11 +35,11 @@ Split into two **independent workflows** that run sequentially:
 
 ## Setup
 
-Run once after installing the skill:
+Run once per project to install required dependencies:
 
 ```bash
-cd skills/fe-harness/scripts
-npm run setup        # installs deps + downloads Chromium
+npm install -D playwright pixelmatch pngjs tsx
+npx playwright install chromium --with-deps
 ```
 
 ---

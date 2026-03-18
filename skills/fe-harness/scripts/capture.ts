@@ -30,21 +30,7 @@
 import { mkdirSync, existsSync, readFileSync } from 'fs';
 import { dirname, resolve, isAbsolute } from 'path';
 import { parseArgs } from 'util';
-import { createRequire } from 'module';
-
-// Resolve playwright from the script's own node_modules (not caller's cwd)
-const require = createRequire(import.meta.url);
-let playwrightPath!: string;
-try {
-  playwrightPath = require.resolve('playwright');
-} catch {
-  const skillDir = new URL('../', import.meta.url).pathname;
-  console.error('[ERROR] playwright is not installed.');
-  console.error(`→ Run: cd ${skillDir}scripts && npm run setup`);
-  process.exit(1);
-}
-
-const { chromium } = await import(playwrightPath);
+import { chromium } from 'playwright';
 
 // Resolve file paths relative to the caller's working directory, not the script's location.
 // ORIGINAL_CWD is an optional safety net for wrapper scripts that change cwd before invoking.
