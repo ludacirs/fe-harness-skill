@@ -269,6 +269,24 @@ Stall counter reaches 3 → stop and escalate to human:
 
 > **This is the FIRST step of Workflow B.** Images MUST be downloaded before any visual comparison.
 
+### Step 0. Enumerate capture targets
+
+Before downloading, list ALL visual states that need comparison. Use the Figma
+nodes and design context gathered in PHASE 0 — do NOT make additional Figma MCP calls.
+
+```
+Enumerate:
+  1. List every Figma node/frame from PHASE 0 (tables, modals, states, variants)
+  2. For each node, define capture scenarios:
+     - Default state
+     - Interactive states (hover, focus, open, expanded, etc.)
+     - Data variants (empty, loaded, error, loading)
+  3. Present the full list to the human for confirmation
+  4. Track as checklist — ALL items must be captured before Visual TDD is complete
+```
+
+>>> HARD GATE: Do NOT download images until the capture target list is confirmed by the human. <<<
+
 ### Step 1. Download Figma expected images via REST API
 
 Use the `fileKey` and `nodeId` saved from PHASE 0 (or from the Figma URL if style-only).
@@ -401,11 +419,13 @@ This catches unintended visual regressions (browser vs browser = reliable).
 - [ ] All interaction tests written → RED confirmed → GREEN achieved
 
 ### Workflow B — Visual TDD
+- [ ] Capture target list enumerated (all nodes, all states)
+- [ ] Capture target list confirmed by human
 - [ ] Expected images downloaded via figma-export.ts (REST API, NOT MCP)
 - [ ] Download verified (files exist on disk)
-- [ ] capture.ts screenshot taken
-- [ ] Claude visual comparison (local files only, no MCP)
-- [ ] Visual GREEN achieved
+- [ ] capture.ts screenshot taken for ALL targets
+- [ ] Claude visual comparison for ALL targets (local files only, no MCP)
+- [ ] Visual GREEN achieved for ALL targets
 - [ ] Baseline saved, artifacts committed
 
 ---
