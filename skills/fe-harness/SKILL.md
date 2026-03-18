@@ -32,6 +32,7 @@ Context    Classify   TDD        Visual     Complete
 NO IMPLEMENTATION CODE WITHOUT FAILING PLAYWRIGHT TESTS FIRST (interactive tasks).
 NO PHASE SKIP WITHOUT EXPLICIT USER APPROVAL.
 NO VISUAL COMPLETION CLAIM WITHOUT FIGMA-VS-BROWSER COMPARISON.
+NO SPEC GENERATION (0-3) WITHOUT EXPECTED IMAGES ON DISK (0-2).
 ```
 
 > style-only tasks (classified and confirmed in PHASE 1) are exempt from the first law — they skip PHASE 2 by design.
@@ -47,9 +48,10 @@ At the start of PHASE 0, create TodoWrite tasks for every phase.
 
 ```
 - [ ] PHASE 0-1: Figma MCP — get_design_context for design tokens and dimensions
-- [ ] PHASE 0-2: Figma REST API — download expected images via figma-export.ts → verify files in visual-qa/expected/
-- [ ] PHASE 0-3: Interaction Spec — generate from design context + task description
-- [ ] PHASE 0-STOP: Present spec + verify images downloaded → user confirmation
+- [ ] PHASE 0-2: Figma REST API — run figma-export.ts to download expected images
+- [ ] PHASE 0-2 GATE: run `ls -la visual-qa/expected/` — confirm PNG files exist (if not, go back to 0-2)
+- [ ] PHASE 0-3: Interaction Spec — generate with `Expected images` section referencing downloaded paths
+- [ ] PHASE 0-STOP: Present spec (with image paths) + show downloaded images → user confirmation
 - [ ] PHASE 1: Classify — task type + user confirmation
 - [ ] PHASE 2: Interaction TDD — RED (all tests fail) → GREEN (all tests pass) + user confirmation
 - [ ] PHASE 3: Visual Verification — Figma vs Browser comparison + user confirmation
@@ -76,6 +78,7 @@ If you catch yourself thinking any of these, STOP — you are about to violate t
 | "User wants speed, so I'll merge phases" | Unless the user explicitly requests a phase skip, every phase is mandatory. |
 | "I can download Figma expected images later" | PHASE 0 must produce them so PHASE 3 can compare. There is no "later". |
 | "I'll use Figma MCP get_screenshot for the expected image" | MCP screenshots cannot be saved to disk — they are in-memory only. Use `figma-export.ts` (REST API) to get files for diff comparison. |
+| "I already saw the image from get_design_context, so I have the visual reference" | Seeing an inline image in conversation ≠ having a file on disk. Phase 3 needs files in `visual-qa/expected/` to compare. You MUST run `figma-export.ts`. |
 
 ---
 
@@ -116,8 +119,9 @@ cd skills/fe-harness/scripts && npm run setup
 ### 0-1. Figma design spec
 Call `mcp__figma__get_design_context({ fileKey, nodeId })` to get tokens, spacing, structure, and frame dimensions. Note the `fileKey` and `nodeId` — you will need them in the next step.
 
-### 0-2. Figma expected image (MANDATORY — do NOT skip)
-Download the expected image via REST API. This is a **separate step** from 0-1 — MCP inline screenshots cannot be saved to disk.
+### 0-2. Download expected images via figma-export.ts
+
+> **This is a SEPARATE action from 0-1.** `get_design_context` returns an inline image you can SEE in conversation — but that image CANNOT be saved to disk. You MUST run the command below to get files for Phase 3.
 
 ```bash
 npx tsx skills/fe-harness/scripts/figma-export.ts \
@@ -125,32 +129,60 @@ npx tsx skills/fe-harness/scripts/figma-export.ts \
   --out visual-qa/expected --scale 1
 ```
 
-See [references/figma-reference.md](references/figma-reference.md) for nodeId and scale details.
+Use the `fileKey` and `nodeId` values from Step 0-1. See [references/figma-reference.md](references/figma-reference.md) for nodeId format and scale details.
 
-> **Verify:** run `ls visual-qa/expected/` and confirm PNG files exist before continuing.
-> If this step fails (missing token, API error), **stop and ask the user** — do NOT skip to spec generation.
+If this fails (missing token, API error), **stop and ask the user** — do NOT skip to spec generation.
+
+### ── GATE: verify downloaded images before proceeding ──
+
+```bash
+ls -la visual-qa/expected/
+```
+
+You MUST run this command and confirm PNG files exist. **If no files exist, you skipped Step 0-2 or it failed. Go back and fix it. Do NOT proceed to Step 0-3.**
+
+Record the file paths — you will reference them in the spec.
 
 ### 0-3. Generate interaction spec
-Synthesize Figma + task description into:
+
+> **Prerequisite:** Step 0-2 GATE passed — `visual-qa/expected/` contains image files.
+
+Synthesize Figma + task description into the spec. The spec MUST include an `Expected images` section listing the downloaded file paths:
+
+```markdown
+## Interaction Spec
+
+### Expected images
+- `visual-qa/expected/<nodeId>.png` — [description]
+
+### Component: <Name>
+...
+```
+
+Fill in remaining sections:
    - Initial state (what user sees on load)
    - Interactions (action → expected result)
    - Edge cases (error, empty, loading)
    - API calls (endpoint + mock response shape)
 
-   See [references/spec-template.md](references/spec-template.md) for full template.
+See [references/spec-template.md](references/spec-template.md) for full template.
 
 ### 0-4. Clarify unknowns
 Ask the user when: no state variants in Figma, unclear post-click behavior, unknown API handling, unclear conditional rendering.
 
 ### STOP — verify deliverables, then present:
 
-Before presenting to the user, verify Phase 0 outputs:
+Before presenting to the user, run final verification:
 ```bash
-ls visual-qa/expected/
+ls -la visual-qa/expected/
 ```
-**If no files exist, you skipped Step 0-2. Go back and run `figma-export.ts` now.**
+**If no PNG files exist, you skipped Step 0-2. Go back and run `figma-export.ts` NOW — do NOT present the spec without images.**
 
-Then present spec and ask:
+Then present to the user:
+1. The interaction spec (which MUST include `Expected images` paths)
+2. The downloaded Figma images (read from `visual-qa/expected/` and show inline)
+
+Ask:
 > "Spec이 맞는지 확인해주세요. 수정할 부분이 있으면 알려주세요."
 
 **Do NOT proceed until the user confirms.**
