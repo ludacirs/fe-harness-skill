@@ -138,6 +138,28 @@ Classify **before** any implementation.
 - "Do we need interaction specs for this?"
 - "Does existing behavior stay the same?"
 
+### HARD GATE — No implementation without RED tests
+
+If classified as **interactive**, you MUST complete PHASE 2 before writing
+ANY implementation code (components, pages, flows, styles, routes, etc.).
+
+The ONLY classification that skips PHASE 2 is **style-only**.
+
+Verify before proceeding to implementation:
+- [ ] `e2e/<task>.spec.ts` exists
+- [ ] `npx playwright test e2e/<task>.spec.ts` has been run
+- [ ] All tests fail (RED confirmed)
+
+If any item is unmet, STOP and complete PHASE 2 first.
+
+### Invalid reasons to skip PHASE 2
+
+These are NOT valid reasons to skip Interaction TDD:
+- "The task is a full page, not a component." → Test at the page route URL.
+- "There are too many interactions." → Write tests for all of them.
+- "It will take too long." → Interaction TDD is a required process, not optional.
+- "No `/dev/preview` route is needed." → Use the actual page/flow route when the task is not a component.
+
 ---
 
 ## PHASE 2 — Interaction TDD Loop
@@ -159,18 +181,26 @@ Classify **before** any implementation.
 - For components with API calls: register MSW handlers or use `page.route()`
   in the preview file
 
+### Test base URL by task type
+
+| Task type | Base URL |
+|-----------|----------|
+| Component | `/dev/preview?component=<ComponentName>` |
+| Page | Actual page route (e.g. `/users`) |
+| Flow | Starting page route of the flow |
+
 ### Step 1. Write all Playwright tests (before implementation)
 
 Write tests for **all** spec items at once in `e2e/<task>.spec.ts`. Tests MUST fail (RED).
 
-- Base URL for component tasks: `/dev/preview?component=<Name>`
+- Use the correct base URL from the table above
 - One `test()` per interaction spec item
 - Prefer role-based selectors (`getByRole`, `getByLabel`)
 
 ### Step 2. Handle API mocking
 
 ```
-Does the component make API calls?
+Does the task make API calls?
   │
   ├── No → proceed without mocking
   │
@@ -178,7 +208,7 @@ Does the component make API calls?
         │
         ├── MSW present (msw in package.json)
         │   → Use existing handlers or add new ones
-        │   → In preview files: worker.use(http.get('*/endpoint', handler))
+        │   → For component preview routes, configure handlers in the preview file if needed
         │
         └── No MSW
             → Use page.route() inline in test files:
@@ -201,7 +231,7 @@ All tests must fail. If any pass unexpectedly, investigate.
 
 ### Step 4. Implement → GREEN
 
-Implement the component/page. Run tests after each significant change.
+Implement the component/page/flow. Run tests after each significant change.
 
 **Exit condition — stall counter:**
 ```
