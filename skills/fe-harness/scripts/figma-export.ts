@@ -90,6 +90,24 @@ if (!token.startsWith('figd_')) {
   process.exit(1);
 }
 
+// --- Validate token against Figma API ---
+console.log('[figma] Validating token...');
+const meRes = await fetch('https://api.figma.com/v1/me', {
+  headers: { 'X-FIGMA-TOKEN': token },
+});
+
+if (!meRes.ok) {
+  if (meRes.status === 401 || meRes.status === 403) {
+    console.error(`[ERROR] Token is invalid or expired (HTTP ${meRes.status}).`);
+    console.error('→ Regenerate at https://www.figma.com/developers/api#access-tokens');
+  } else {
+    console.error(`[ERROR] Figma API returned ${meRes.status} during token validation.`);
+    console.error('→ Figma may be temporarily unavailable. Try again in a few minutes.');
+  }
+  process.exit(1);
+}
+console.log('[figma] Token valid.');
+
 if (!existsSync(outDir)) mkdirSync(outDir, { recursive: true });
 
 // --- Figma API ---

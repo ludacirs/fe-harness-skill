@@ -35,11 +35,11 @@ Split into two **independent workflows** that run sequentially:
 
 ## Setup
 
-Run once after installing the skill:
+Run once per project to install required dependencies:
 
 ```bash
-cd skills/fe-harness/scripts
-npm run setup        # installs deps + downloads Chromium
+npm install -D playwright pixelmatch pngjs tsx
+npx playwright install chromium --with-deps
 ```
 
 ---
@@ -221,6 +221,20 @@ If API endpoints or response shapes are unknown → ask human.
 
 Mock data is stored in `e2e/mocks/` for reuse across tests.
 
+#### API mock troubleshooting
+
+| Symptom | Cause | Fix |
+|---------|-------|-----|
+| `page.route('**/api/...')` not intercepting | API host is an absolute external URL (e.g., `http://172.168.x.x/api/...`). Glob patterns like `**/api` only match relative paths. | Use the full URL pattern: `page.route('http://172.168.x.x/api/users', ...)` or `page.route('**/172.168.x.x/**', ...)` |
+| Mock works in test but not in capture.ts | capture.ts uses `--mock-routes` JSON, not Playwright test fixtures | Pass mock routes via `--mock-routes mock-routes.json`. See `references/mock-routes-example.json` |
+| Component renders with real data instead of mock | MSW handlers not registered in preview file, or dev server not using MSW | Check that preview file imports and activates MSW worker; or use `page.route()` as fallback |
+| Mock returns but component shows loading spinner | Response shape doesn't match what component expects | Log `mock.response` and compare with component's API type definition |
+
+**When `page.route()` doesn't work at all:**
+1. Check if the project uses a dev preview page (`/dev/preview?component=...`) with built-in MSW handlers — prefer that over `page.route()`
+2. Check `VITE_API_HOST` / `NEXT_PUBLIC_API_URL` env vars — if they point to an external host, use the full URL in `page.route()`
+3. As last resort, create a test-specific environment config that points API calls to a localhost mock server
+
 ### Step 3. Confirm RED
 
 ```bash
@@ -228,6 +242,12 @@ npx playwright test e2e/<task>.spec.ts
 ```
 
 All tests must fail. If any pass unexpectedly, investigate.
+
+>>> HARD GATE: Do NOT proceed to implementation until ALL tests have been run and confirmed FAILING (RED). <<<
+
+- [ ] `npx playwright test e2e/<task>.spec.ts` executed
+- [ ] All tests FAIL (RED confirmed)
+- [ ] If tests cannot run (environment issue), fix the environment FIRST — do NOT skip to implementation
 
 ### Step 4. Implement → GREEN
 
@@ -246,7 +266,11 @@ Stall counter reaches 3 → stop and escalate to human:
 
 ### Workflow A complete
 
-All interaction tests GREEN. Proceed to **Workflow B**.
+>>> HARD GATE: Do NOT proceed to Workflow B until ALL interaction tests PASS. <<<
+
+- [ ] `npx playwright test e2e/<task>.spec.ts` executed
+- [ ] All tests PASS (GREEN confirmed — 0 failures)
+- [ ] If any test fails, fix implementation FIRST — do NOT skip to Visual TDD
 
 ---
 
@@ -259,13 +283,31 @@ All interaction tests GREEN. Proceed to **Workflow B**.
 
 > **This is the FIRST step of Workflow B.** Images MUST be downloaded before any visual comparison.
 
+### Step 0. Enumerate capture targets
+
+Before downloading, list ALL visual states that need comparison. Use the Figma
+nodes and design context gathered in PHASE 0 — do NOT make additional Figma MCP calls.
+
+```
+Enumerate:
+  1. List every Figma node/frame from PHASE 0 (tables, modals, states, variants)
+  2. For each node, define capture scenarios:
+     - Default state
+     - Interactive states (hover, focus, open, expanded, etc.)
+     - Data variants (empty, loaded, error, loading)
+  3. Present the full list to the human for confirmation
+  4. Track as checklist — ALL items must be captured before Visual TDD is complete
+```
+
+>>> HARD GATE: Do NOT download images until the capture target list is confirmed by the human. <<<
+
 ### Step 1. Download Figma expected images via REST API
 
 Use the `fileKey` and `nodeId` saved from PHASE 0 (or from the Figma URL if style-only).
 
 ```bash
 export FIGMA_TOKEN=<TOKEN>   # or set in .env
-npx tsx skills/fe-harness/scripts/figma-export.ts \
+npx tsx ~/.claude/skills/fe-harness/scripts/figma-export.ts \
   --file-key <FILE_KEY> --node-ids <NODE_ID> \
   --out visual-qa/expected --scale 1
 ```
@@ -299,19 +341,26 @@ npx wait-on http://localhost:<PORT>
 ### Step 2. Capture screenshot
 
 ```bash
-npx tsx skills/fe-harness/scripts/capture.ts \
+npx tsx ~/.claude/skills/fe-harness/scripts/capture.ts \
   --url  http://localhost:<PORT>/<route-or-preview> \
   --out  visual-qa/actual/<task>.png \
   --type <component|page|flow> \
   --width <W> --height <H>
 ```
 
+> Scripts resolve relative paths (like `--out visual-qa/actual/...`) against your
+> current working directory. No `cd` or `NODE_PATH` needed.
+
 Width/height must match the Figma frame dimensions saved from PHASE 0.
 
 ### Step 3. Compare with Figma (Claude visual comparison — local files only)
 
-> Figma vs browser → use Claude visual comparison, not diff.ts (see Gotchas).
-> Do NOT call Figma MCP here. Use the downloaded file from PHASE 3.
+> **NEVER use `diff.ts` for Figma-vs-browser comparison.** Pixel-level diffing
+> across different rendering engines (Figma vs Chromium) produces false positives
+> due to font rendering, anti-aliasing, and sub-pixel differences. `diff.ts` is
+> for browser-vs-browser regression ONLY (PHASE 5).
+>
+> **NEVER call Figma MCP here.** Use the downloaded file from PHASE 3.
 
 Present both **local** images to Claude for comparison:
 1. `visual-qa/expected/<task>.png` (downloaded from Figma REST API in PHASE 3)
@@ -364,7 +413,7 @@ visual-qa/diff/
 After baseline is established, future tasks can run:
 
 ```bash
-npx tsx skills/fe-harness/scripts/diff.ts \
+npx tsx ~/.claude/skills/fe-harness/scripts/diff.ts \
   --expected visual-qa/expected/<task>-baseline.png \
   --actual   visual-qa/actual/<task>.png \
   --diff     visual-qa/diff/<task>.png \
@@ -387,11 +436,13 @@ This catches unintended visual regressions (browser vs browser = reliable).
 - [ ] All interaction tests written → RED confirmed → GREEN achieved
 
 ### Workflow B — Visual TDD
+- [ ] Capture target list enumerated (all nodes, all states)
+- [ ] Capture target list confirmed by human
 - [ ] Expected images downloaded via figma-export.ts (REST API, NOT MCP)
 - [ ] Download verified (files exist on disk)
-- [ ] capture.ts screenshot taken
-- [ ] Claude visual comparison (local files only, no MCP)
-- [ ] Visual GREEN achieved
+- [ ] capture.ts screenshot taken for ALL targets
+- [ ] Claude visual comparison for ALL targets (local files only, no MCP)
+- [ ] Visual GREEN achieved for ALL targets
 - [ ] Baseline saved, artifacts committed
 
 ---

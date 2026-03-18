@@ -28,22 +28,16 @@
  */
 
 import { mkdirSync, existsSync, readFileSync } from 'fs';
-import { dirname } from 'path';
+import { dirname, resolve, isAbsolute } from 'path';
 import { parseArgs } from 'util';
-import { createRequire } from 'module';
+import { chromium } from 'playwright';
 
-// Guard: check playwright is installed before proceeding
-const require = createRequire(import.meta.url);
-try {
-  require.resolve('playwright');
-} catch {
-  const skillDir = new URL('../', import.meta.url).pathname;
-  console.error('[ERROR] playwright is not installed.');
-  console.error(`→ Run: cd ${skillDir}scripts && npm run setup`);
-  process.exit(1);
+// Resolve file paths relative to the caller's working directory, not the script's location.
+// ORIGINAL_CWD is an optional safety net for wrapper scripts that change cwd before invoking.
+const callerCwd = process.env.ORIGINAL_CWD || process.cwd();
+function resolvePath(p: string): string {
+  return isAbsolute(p) ? p : resolve(callerCwd, p);
 }
-
-const { chromium } = await import('playwright');
 
 // --- Types ---
 
@@ -120,11 +114,11 @@ if (!args.url || !args.out) {
 }
 
 const url = args.url;
-const out = args.out;
+const out = resolvePath(args.out!);
 const captureType = (args.type ?? 'page') as CaptureType;
 const waitState = (args.wait ?? 'networkidle') as WaitState;
-const stepsPath = args.steps;
-const mockRoutesPath = args['mock-routes'];
+const stepsPath = args.steps ? resolvePath(args.steps) : undefined;
+const mockRoutesPath = args['mock-routes'] ? resolvePath(args['mock-routes']) : undefined;
 const timeoutMs = parseInt(args.timeout ?? '30000');
 const viewportWidth = parseInt(args.width ?? '1440');
 const viewportHeight = parseInt(args.height ?? '900');
