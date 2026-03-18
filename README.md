@@ -34,10 +34,14 @@ npm run setup
 ### Two feedback loops
 
 ```
-PHASE 0  Gather Figma design + generate interaction spec (AI proposes, human confirms)
+PHASE 0  Gather Figma design + generate interaction spec
+  ↓ [user confirms spec]
 PHASE 1  Classify complexity (style-only / interactive / ambiguous)
+  ↓ [user confirms classification]
 PHASE 2  Interaction TDD — write Playwright tests → RED → implement → GREEN
+  ↓ [user confirms to proceed]
 PHASE 3  Visual verification — capture screenshot → compare with Figma → iterate
+  ↓ [user confirms visual match]
 PHASE 4  Save baseline + accumulate harness artifacts in project
 ```
 
