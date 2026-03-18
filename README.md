@@ -1,11 +1,13 @@
-# frontend-visual-tdd
+# fe-harness
 
-A [Claude Code skill](https://agentskills.io) for visual TDD on React frontends.
+A [Claude Code skill](https://agentskills.io) for frontend development with
+two feedback loops: **Interaction TDD** (Playwright tests) then
+**Visual Verification** (Figma comparison).
 
-Uses **Playwright screenshot diff (pixelmatch)** as the RED/GREEN signal —
-because AI agents write code and tests simultaneously, making unit tests an
-unreliable gate. When Figma MCP is connected, expected images are extracted
-automatically from your designs.
+AI agents write code and tests simultaneously, making unit tests an unreliable
+gate. This skill fixes that by generating interaction specs from Figma + task
+descriptions, writing Playwright tests *before* implementation (real RED signal),
+then verifying visual fidelity against Figma designs.
 
 Works with: Claude Code, Cursor, Codex, OpenCode, and any agent that supports
 the [Agent Skills spec](https://agentskills.io).
@@ -13,9 +15,8 @@ the [Agent Skills spec](https://agentskills.io).
 ## Install
 
 > **Project-level only** — do not install globally.
-> The skill instructions reference `.claude/skills/` paths relative to the
-> project root, so a global install (`~/.claude/skills/`) will break script
-> execution. Install once per project that needs it.
+> The skill references `skills/` paths relative to the project root,
+> so a global install will break script execution.
 
 ```bash
 npx skills add ludacirs/frontend-visual-tdd-skill
@@ -24,28 +25,52 @@ npx skills add ludacirs/frontend-visual-tdd-skill
 Then run setup once to install Playwright and Chromium:
 
 ```bash
-cd .claude/skills/frontend-visual-tdd/scripts
+cd skills/fe-harness/scripts
 npm run setup
 ```
 
 ## What it does
 
-- **Component / Page / Flow** — covers all three test scopes in one skill
-- **Figma MCP integration** — pulls expected images directly from your designs
-- **API mocking** — `--mock-routes` intercepts fetch calls so pages render fully
-- **Refactor safety** — captures current rendering as baseline before code changes
-- **superpowers compatible** — auto-triggers during `writing-plans` for any frontend UI task
-
-## Workflow
+### Two feedback loops
 
 ```
-PHASE 0  extract expected.png from Figma (or capture baseline for refactors)
-PHASE 1  capture actual screenshot → run diff → confirm RED
-PHASE 2  implement → iterate until GREEN (≤ threshold)
-PHASE 3  refactor → commit expected/ + config.json
+PHASE 0  Gather Figma design + generate interaction spec (AI proposes, human confirms)
+PHASE 1  Classify complexity (style-only / interactive / ambiguous)
+PHASE 2  Interaction TDD — write Playwright tests → RED → implement → GREEN
+PHASE 3  Visual verification — capture screenshot → compare with Figma → iterate
+PHASE 4  Save baseline + accumulate harness artifacts in project
 ```
+
+### Adaptive complexity
+
+| Complexity | Path |
+|------------|------|
+| **style-only** | Skip interaction TDD → visual verification only |
+| **interactive** | Full TDD loop → visual verification |
+| **ambiguous** | Ask human before proceeding |
+
+### Key features
+
+- **AI spec generation** — synthesizes Figma design + task description into interaction specs, asks human when unclear
+- **Interaction TDD** — Playwright tests written before implementation, real RED/GREEN gate
+- **Visual verification** — Claude compares Figma screenshot vs browser rendering (not pixel diff)
+- **Regression** — `diff.ts` (pixelmatch) for browser-to-browser comparison after baseline is established
+- **API mocking** — detects MSW or falls back to `page.route()`; `--mock-routes` for capture.ts
+- **Harness accumulation** — tests, preview routes, and baselines stay in the project as permanent infrastructure
+- **Stall detection** — stops and escalates to human when progress stalls (3 consecutive non-improvements)
+
+## Scripts
+
+| Script | Purpose |
+|--------|---------|
+| `capture.ts` | Playwright screenshot (component / page / flow) |
+| `diff.ts` | pixelmatch comparison — **regression only** (browser vs browser) |
+| `figma-export.ts` | Download Figma frame images via REST API |
+
+All scripts support `--help` for usage details.
 
 ## Requirements
 
 - Node.js 18+
-- Figma MCP (optional — falls back to assertion mode without it)
+- Figma Personal Access Token (`figd_*`) for design export
+- Figma MCP connection for design spec retrieval
