@@ -29,6 +29,7 @@ import { parseArgs } from 'util';
 
 const { values } = parseArgs({
   options: {
+    help:       { type: 'boolean', short: 'h' },
     'file-key': { type: 'string' },
     'node-ids': { type: 'string' },
     token:      { type: 'string' },
@@ -38,6 +39,25 @@ const { values } = parseArgs({
   },
   strict: false,
 });
+
+if (values.help) {
+  console.log(`Usage: FIGMA_TOKEN=<token> npx tsx figma-export.ts --file-key <key> --node-ids <id,...> --out <dir> [options]
+
+Download Figma frame images via REST API for visual comparison baselines.
+
+Options:
+  --file-key   Figma file key (required)
+  --node-ids   Comma-separated node IDs, e.g. "123:456,789:012" (required)
+  --out        Output directory, e.g. visual-qa/expected (required)
+  --token      Figma Personal Access Token (fallback; prefer FIGMA_TOKEN env var)
+  --scale      Image scale factor (default: 1)
+  --format     png | jpg | svg | pdf (default: png)
+
+Examples:
+  FIGMA_TOKEN=figd_xxx npx tsx figma-export.ts --file-key abc123 --node-ids 123:456 --out visual-qa/expected
+  npx tsx figma-export.ts --file-key abc123 --node-ids 123:456,789:012 --out ./images --scale 2 --token figd_xxx`);
+  process.exit(0);
+}
 
 const args = values as Record<string, string | undefined>;
 

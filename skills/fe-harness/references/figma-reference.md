@@ -49,7 +49,7 @@ Use `figma-export.ts` to download a pixel-accurate PNG:
 
 ```bash
 export FIGMA_TOKEN=<TOKEN>   # or set in .env
-npx tsx .claude/skills/frontend-visual-tdd/scripts/figma-export.ts \
+npx tsx skills/fe-harness/scripts/figma-export.ts \
   --file-key <FILE_KEY> \
   --node-ids <NODE_ID>  \
   --out visual-qa/expected \

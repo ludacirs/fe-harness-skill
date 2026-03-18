@@ -2,11 +2,14 @@
 /**
  * diff.ts — pixelmatch-based screenshot comparison
  *
+ * FOR REGRESSION ONLY (browser vs browser).
+ * Do NOT use for Figma vs browser comparison — use Claude visual comparison instead.
+ *
  * Usage:
  *   npx tsx diff.ts --expected <path> --actual <path> --diff <path> [--threshold 0.5]
  *
  * Exit codes:
- *   0 = GREEN (mismatch ≤ threshold)
+ *   0 = GREEN (mismatch <= threshold)
  *   1 = RED   (mismatch > threshold)
  *   2 = Error (missing files, size mismatch, missing deps)
  */
@@ -35,6 +38,8 @@ const { PNG }    = await import('pngjs');
 
 const { values } = parseArgs({
   options: {
+    help:      { type: 'boolean', short: 'h' },
+    json:      { type: 'boolean' },
     expected:  { type: 'string' },
     actual:    { type: 'string' },
     diff:      { type: 'string' },
@@ -43,6 +48,30 @@ const { values } = parseArgs({
   strict: false,
 });
 
+if (values.help) {
+  console.log(`Usage: npx tsx diff.ts --expected <path> --actual <path> --diff <path> [options]
+
+Pixel-level screenshot comparison for visual regression (browser vs browser ONLY).
+
+Options:
+  --expected   Path to baseline screenshot (required)
+  --actual     Path to current screenshot (required)
+  --diff       Path to write diff image (required)
+  --threshold  Max allowed mismatch percentage (default: 0.5)
+  --json       Output result as JSON instead of formatted text
+
+Exit codes:
+  0 = GREEN (mismatch <= threshold)
+  1 = RED   (mismatch > threshold)
+  2 = Error (missing files, size mismatch, invalid args)
+
+Examples:
+  npx tsx diff.ts --expected visual-qa/expected/home-baseline.png --actual visual-qa/actual/home.png --diff visual-qa/diff/home.png
+  npx tsx diff.ts --expected baseline.png --actual actual.png --diff diff.png --threshold 1.0 --json`);
+  process.exit(0);
+}
+
+const outputJson = !!values.json;
 const args = values as Record<string, string | undefined>;
 
 if (!args.expected || !args.actual || !args.diff) {
@@ -56,7 +85,7 @@ const diffPath     = args.diff;
 
 if (!existsSync(expectedPath)) {
   console.error(`[ERROR] expected image not found: ${expectedPath}`);
-  console.error('→ Run PHASE 0 first: extract expected.png from Figma MCP.');
+  console.error('→ Run PHASE 0 first: extract expected.png via figma-export.ts.');
   process.exit(2);
 }
 
@@ -70,8 +99,8 @@ const expected = PNG.sync.read(readFileSync(expectedPath));
 const actual   = PNG.sync.read(readFileSync(actualPath));
 
 if (expected.width !== actual.width || expected.height !== actual.height) {
-  console.error(`[ERROR] Size mismatch: expected ${expected.width}×${expected.height}, actual ${actual.width}×${actual.height}`);
-  console.error('→ Match --width/--height in capture.ts to Figma frame dimensions.');
+  console.error(`[ERROR] Size mismatch: expected ${expected.width}x${expected.height}, actual ${actual.width}x${actual.height}`);
+  console.error('→ Match --width/--height in capture.ts to baseline dimensions.');
   process.exit(2);
 }
 
@@ -108,17 +137,30 @@ const diffDir = dirname(diffPath);
 if (!existsSync(diffDir)) mkdirSync(diffDir, { recursive: true });
 writeFileSync(diffPath, PNG.sync.write(diff));
 
-console.log('─'.repeat(50));
-console.log(`Status:    ${isGreen ? 'GREEN ✅' : 'RED ❌'}`);
-console.log(`Mismatch:  ${mismatchPct.toFixed(3)}%  (${mismatchPx}px / ${totalPx}px)`);
-console.log(`Threshold: ${threshold}%`);
-console.log(`Diff img:  ${args.diff}`);
-console.log('─'.repeat(50));
+const result = {
+  status: isGreen ? 'GREEN' as const : 'RED' as const,
+  mismatchPct: parseFloat(mismatchPct.toFixed(3)),
+  mismatchPx,
+  totalPx,
+  threshold,
+  diffImage: args.diff,
+};
 
-if (!isGreen) {
-  console.log('→ RED: fix CSS/component, then re-run capture.ts + diff.ts.');
-  process.exit(1);
+if (outputJson) {
+  console.log(JSON.stringify(result));
+} else {
+  console.log('-'.repeat(50));
+  console.log(`Status:    ${result.status}`);
+  console.log(`Mismatch:  ${mismatchPct.toFixed(3)}%  (${mismatchPx}px / ${totalPx}px)`);
+  console.log(`Threshold: ${threshold}%`);
+  console.log(`Diff img:  ${args.diff}`);
+  console.log('-'.repeat(50));
+
+  if (!isGreen) {
+    console.log('→ RED: fix CSS/component, then re-run capture.ts + diff.ts.');
+  } else {
+    console.log('→ GREEN: actual matches baseline.');
+  }
 }
 
-console.log('→ GREEN: actual matches expected.');
-process.exit(0);
+process.exit(isGreen ? 0 : 1);
