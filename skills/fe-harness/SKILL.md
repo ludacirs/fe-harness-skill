@@ -47,7 +47,7 @@ At the start of PHASE 0, create TodoWrite tasks for every phase.
 **PHASE 0 has sub-tasks** — each sub-task gets its own todo so nothing is skipped:
 
 ```
-- [ ] PHASE 0-1: Figma design — get_design_context + figma-export.ts + verify images exist
+- [ ] PHASE 0-1: Figma design — figma-export.ts (download first) + get_design_context + verify images exist
 - [ ] PHASE 0-2: Interaction Spec — run check-expected-images.sh (MUST pass), then generate spec with Expected images section
 - [ ] PHASE 0-3: Clarify unknowns with user
 - [ ] PHASE 0-STOP: Present spec + downloaded images → user confirmation
@@ -116,24 +116,13 @@ cd skills/fe-harness/scripts && npm run setup
 
 ## PHASE 0 — Context & Spec
 
-### 0-1. Gather Figma design (MCP + download)
+### 0-1. Gather Figma design (download first, then MCP)
 
-This is ONE step with TWO actions. Do both before moving on.
+This is ONE step with TWO actions. **Download comes first** — before you see any inline screenshot.
 
-**Action A — Design spec via MCP:**
+**Action A — Download expected images via REST API:**
 
-```
-mcp__figma__get_design_context({ fileKey, nodeId })
-→ design tokens, colors, spacing, component structure
-→ frame width × height (for viewport matching)
-→ inline screenshot (conversation reference only — CANNOT be saved to disk)
-```
-
-Note the `fileKey` and `nodeId` — you need them immediately for Action B.
-
-**Action B — Download expected images via REST API:**
-
-> The inline screenshot from Action A exists only in conversation memory. It CANNOT be saved to disk. You MUST run this command to get files for Phase 3 visual comparison.
+Parse the Figma URL to extract `fileKey` and `nodeId` (see [references/figma-reference.md](references/figma-reference.md) for format: `node-id=123-456` → `123:456`), then run:
 
 ```bash
 npx tsx skills/fe-harness/scripts/figma-export.ts \
@@ -141,9 +130,16 @@ npx tsx skills/fe-harness/scripts/figma-export.ts \
   --out visual-qa/expected --scale 1
 ```
 
-See [references/figma-reference.md](references/figma-reference.md) for nodeId format (`123-456` → `123:456`) and scale details.
+**If this fails** (missing token, API error), **stop and ask the user.** Do NOT proceed.
 
-**If Action B fails** (missing token, API error), **stop and ask the user.** Do NOT proceed without downloaded images.
+**Action B — Design spec via MCP:**
+
+```
+mcp__figma__get_design_context({ fileKey, nodeId })
+→ design tokens, colors, spacing, component structure
+→ frame width × height (for viewport matching)
+→ inline screenshot (conversation reference only — CANNOT be saved to disk)
+```
 
 **Step 0-1 is NOT complete until both actions are done and images exist on disk.**
 
