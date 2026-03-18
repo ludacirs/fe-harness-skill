@@ -22,6 +22,76 @@ Context    Classify   TDD        Visual     Complete
  [ask]     [ask]     [ask]      [ask]      [done]
 ```
 
+**No shortcuts. If a rule says "do X", you do X — not something you judge to be equivalent.**
+
+---
+
+## Iron Laws
+
+```
+NO IMPLEMENTATION CODE WITHOUT FAILING PLAYWRIGHT TESTS FIRST (interactive tasks).
+NO PHASE SKIP WITHOUT EXPLICIT USER APPROVAL.
+NO VISUAL COMPLETION CLAIM WITHOUT FIGMA-VS-BROWSER COMPARISON.
+```
+
+> style-only tasks (classified and confirmed in PHASE 1) are exempt from the first law — they skip PHASE 2 by design.
+
+These are absolute. There are no exceptions. "Simple" tasks, "obvious" implementations, and "blocked" tools do not override these laws. If a law cannot be satisfied, **stop and escalate to the user** — do not substitute an alternative (e.g., code review instead of visual verification).
+
+---
+
+## Mandatory Progress Tracking
+
+At the start of PHASE 0, create TodoWrite tasks for every phase:
+
+```
+- [ ] PHASE 0: Context & Spec — Figma export + interaction spec + user confirmation
+- [ ] PHASE 1: Classify — task type + user confirmation
+- [ ] PHASE 2: Interaction TDD — RED (all tests fail) → GREEN (all tests pass) + user confirmation
+- [ ] PHASE 3: Visual Verification — Figma vs Browser comparison + user confirmation
+- [ ] PHASE 4: Completion — artifacts listed + announced
+```
+
+Update each task as you progress. **Do not mark a phase complete until you have received user confirmation at its STOP gate.** If PHASE 1 classifies the task as style-only, mark PHASE 2 as `[skipped — style-only]`.
+
+---
+
+## Rationalization Prevention
+
+If you catch yourself thinking any of these, STOP — you are about to violate the process:
+
+| Excuse | Reality |
+|--------|---------|
+| "This is simple enough to implement without tests" | Subtle bugs emerge from simple tasks. Iron Law has no exceptions. |
+| "I'll implement first and write tests later" | Tests written after implementation conform to the implementation, not the spec. RED-first is the point. |
+| "Build passes, so visual verification is unnecessary" | Build passing ≠ design match. They are entirely different checks. |
+| "Auth guard blocks screenshots" | Create a preview route outside auth. This is specified in Phase 2-1. |
+| "Chrome extension doesn't work, so I'll substitute code review" | Code review is not visual verification. capture.ts is Playwright-based — no browser extension needed. |
+| "Let me start implementation in parallel agents first" | Implementation happens in PHASE 2-5. No implementation code before tests are written (2-2). |
+| "Classification is already embedded in the spec, no need to ask separately" | Embedding classification in the spec bypasses the STOP gate. Ask separately. |
+| "User wants speed, so I'll merge phases" | Unless the user explicitly requests a phase skip, every phase is mandatory. |
+| "I can download Figma expected images later" | PHASE 0 must produce them so PHASE 3 can compare. There is no "later". |
+| "I'll use Figma MCP get_screenshot for the expected image" | MCP screenshots cannot be saved to disk — they are in-memory only. Use `figma-export.ts` (REST API) to get files for diff comparison. |
+
+---
+
+## Red Flags — if you catch yourself thinking any of these, STOP immediately
+
+- "This is simple enough to..."
+- "Let me just quickly..."
+- "I can do that later..."
+- "This phase is unnecessary for this case"
+- "I'll use an alternative approach instead..."
+- "Build passes, so that's sufficient"
+- "I don't need to ask the user about this"
+- "Let me start implementation in parallel first"
+- "I'm confident enough without tests"
+- "The tool isn't working, so I'll skip this"
+
+**If any of the above applies: STOP. You are rationalizing a phase skip. When a tool fails, the answer is escalation to the user — not skipping.**
+
+---
+
 ## Setup (once per project)
 
 ```bash
