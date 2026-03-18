@@ -1,8 +1,8 @@
 {
-  "name": "frontend-visual-tdd",
+  "name": "fe-harness-scripts",
   "version": "1.0.0",
   "type": "module",
-  "description": "Standalone visual TDD scripts — Playwright screenshot capture + pixelmatch diff",
+  "description": "Frontend harness scripts — Playwright capture + pixelmatch diff + Figma export",
   "engines": {
     "node": ">=18"
   },

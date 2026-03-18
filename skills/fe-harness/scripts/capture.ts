@@ -73,6 +73,7 @@ type WaitState = 'networkidle' | 'load' | 'domcontentloaded';
 
 const { values } = parseArgs({
   options: {
+    help:          { type: 'boolean', short: 'h' },
     url:           { type: 'string' },
     out:           { type: 'string' },
     type:          { type: 'string', default: 'page' },
@@ -86,6 +87,30 @@ const { values } = parseArgs({
   },
   strict: false,
 });
+
+if (values.help) {
+  console.log(`Usage: npx tsx capture.ts --url <url> --out <path> [options]
+
+Capture a Playwright screenshot of a page, component, or multi-step flow.
+
+Options:
+  --url          Target URL (required)
+  --out          Output path, e.g. visual-qa/actual/login.png (required)
+  --type         component | page | flow  (default: page)
+  --width        Viewport width  (default: 1440)
+  --height       Viewport height (default: 900)
+  --steps        Path to flow steps JSON (required when --type flow)
+  --mock-routes  Path to mock routes JSON for API interception
+  --wait         networkidle | load | domcontentloaded (default: networkidle)
+  --timeout      Navigation timeout in ms (default: 30000)
+  --headless     true | false (default: true)
+
+Examples:
+  npx tsx capture.ts --url http://localhost:3000 --out visual-qa/actual/home.png
+  npx tsx capture.ts --url 'http://localhost:3000/dev/preview?component=Login' --out visual-qa/actual/login.png --type component
+  npx tsx capture.ts --url http://localhost:3000 --out visual-qa/actual/flow.png --type flow --steps steps.json`);
+  process.exit(0);
+}
 
 const args = values as Record<string, string | undefined>;
 
