@@ -310,52 +310,80 @@ Tell the user:
 
 > **This is the FIRST step of Workflow B.** Images MUST be downloaded before any visual comparison.
 
-### Step 1. Enumerate capture targets
+### Step 1. Enumerate capture targets — Visual Test List
 
-Before downloading, list ALL visual states that need comparison. Use the Figma
-nodes and design context gathered in Phase 0 — do NOT make additional Figma MCP calls.
+Before downloading, build a **Visual Test List** from Phase 0's Figma nodes.
+Every nodeId from Phase 0 MUST appear as at least one test item. Do NOT make
+additional Figma MCP calls — use the data already gathered.
+
+**Rule: nodeId count = minimum test count.** If Phase 0 saved 3 nodeIds, the
+Visual Test List must have at least 3 items (one per nodeId). Additional items
+(interactive states, data variants) may be added on top.
 
 ```
-Enumerate:
-  1. List every Figma node/frame from Phase 0 (tables, modals, states, variants)
-  2. For each node, define capture scenarios:
-     - Default state
-     - Interactive states (hover, focus, open, expanded, etc.)
-     - Data variants (empty, loaded, error, loading)
-  3. Present the full list to the human for confirmation
-  4. Track as checklist — ALL items must be captured before Visual TDD is complete
+Build Visual Test List:
+  1. For EACH nodeId from Phase 0, create one test entry:
+     VT-1: <nodeId label> (nodeId: <X:Y>) → <figma-export filename>.png
+     VT-2: <nodeId label> (nodeId: <X:Y>) → <figma-export filename>.png
+     ...
+  2. For nodes with interactive states (hover, open, expanded, etc.),
+     add additional test entries with the SAME nodeId but different
+     capture conditions:
+     VT-N: <label> — <state> (nodeId: <X:Y>) → <filename>.png
+  3. Verify: every nodeId from Phase 0 has at least one VT entry.
+     If any nodeId is missing, add it before presenting.
 ```
 
-### >>> STOP — Present capture target list to user and wait <<<
+**Visual Test List output format (present this exactly):**
+
+```
+Visual Test List (N items from M Figma nodes):
+  VT-1: [label] (nodeId: [X:Y], viewport: [WxH]) → expected/[name].png
+  VT-2: [label] (nodeId: [X:Y], viewport: [WxH]) → expected/[name].png
+  ...
+```
+
+### >>> STOP — Present Visual Test List to user and wait <<<
 
 Tell the user:
-> "Here are the capture targets I identified: [list]. Confirm before I download?"
+> "Phase 5: Visual Test List — I identified N visual tests from M Figma nodes:
+> [Visual Test List]
+> Confirm before I download?"
 
-**Do NOT download images until the user confirms the capture target list.**
+**Do NOT download images until the user confirms the Visual Test List.**
 
-### Step 2. Download Figma expected images via REST API
+### Step 2. Download Figma expected images for ALL Visual Test items
 
-Use the `fileKey` and `nodeId` saved from Phase 0 (or from the Figma URL if style-only).
+Use `figma-export.ts` with ALL nodeIds from the Visual Test List.
+Pass them comma-separated in a single call (the script batches the API request).
 
 ```bash
 export FIGMA_TOKEN=<TOKEN>   # or set in .env
 npx tsx scripts/figma-export.ts \
-  --file-key <FILE_KEY> --node-ids <NODE_ID> \
+  --file-key <FILE_KEY> --node-ids <NODE_ID_1>,<NODE_ID_2>,... \
   --out visual-qa/expected --scale 1
 ```
 
 See [references/figma-reference.md](references/figma-reference.md) for nodeId lookup
 and scale matching details.
 
-### Step 3. Verify download
+### Step 3. Verify download — ALL items
 
-Confirm the expected image exists on disk:
+Confirm expected images exist for EVERY Visual Test item:
 ```bash
 ls -la visual-qa/expected/
 ```
 
-> **Do NOT proceed to Phase 6 until the expected image file exists.**
-> If download fails, check FIGMA_TOKEN and nodeId format (must use colon: `123:456`).
+Cross-check against the Visual Test List:
+```
+  VT-1: expected/[name].png — ✅ exists / ❌ missing
+  VT-2: expected/[name].png — ✅ exists / ❌ missing
+  ...
+```
+
+> **Do NOT proceed to Phase 6 until ALL expected image files exist.**
+> If any download fails, check FIGMA_TOKEN and nodeId format (must use colon: `123:456`).
+> Re-download missing items before continuing.
 
 ---
 
@@ -370,12 +398,20 @@ npm run dev &
 npx wait-on http://localhost:<PORT>
 ```
 
-### Step 2–4. For EACH capture target — capture, compare, iterate
+### Step 2–4. For EACH Visual Test item — capture, compare, iterate
 
-**You MUST repeat Steps 2–4 for EVERY capture target confirmed in Phase 5.**
-Do NOT move to the STOP gate until ALL targets have been verified.
+**You MUST repeat Steps 2–4 for EVERY item in the Visual Test List from Phase 5.**
+Do NOT move to the STOP gate until ALL items have been verified.
 
-Track progress as a checklist (one entry per target from Phase 5).
+Track progress using the VT numbering from Phase 5:
+```
+Visual Test Progress:
+  VT-1: [label] — ⬜ pending
+  VT-2: [label] — ⬜ pending
+  ...
+```
+Update after each item completes: ⬜ → ✅ PASS or ❌ FAIL (stall).
+**ALL items must reach ✅ before proceeding to Step 5.**
 
 **For each target:**
 
@@ -430,14 +466,19 @@ When ALL targets pass visual verification:
 - Future changes use `diff.ts` (pixelmatch) against these baselines
   (browser vs browser comparison IS reliable)
 
-### >>> STOP — Present visual verification results to user and wait <<<
+### >>> STOP — Present Visual Test results to user and wait <<<
 
 Tell the user:
-> "Phase 6 complete. All N/N visual targets verified:
-> - [target 1]: PASS
-> - [target 2]: PASS
-> - ...
+> "Phase 6 complete — Visual Test List N/N verified:
+> ```
+> VT-1: [label] — ✅ PASS
+> VT-2: [label] — ✅ PASS
+> ...
+> ```
 > Ready to finalize (Phase 7)?"
+
+**Do NOT declare Phase 6 complete until EVERY VT item is ✅.**
+If any VT items remain ⬜ or ❌, you are NOT done. Continue processing.
 
 **Do NOT proceed to Phase 7 until the user confirms.**
 
@@ -463,12 +504,12 @@ See [references/completion-guide.md](references/completion-guide.md) for artifac
 - [ ] **4-1.** Implementation complete, all GREEN confirmed — **STOP, wait for user**
 
 ### Workflow B — Visual TDD
-- [ ] **5-1.** Capture target list enumerated and confirmed by human — **STOP, wait for user**
-- [ ] **5-2.** Expected images downloaded via figma-export.ts (REST API, NOT MCP)
-- [ ] **5-3.** Download verified (files exist on disk)
-- [ ] **6-1.** capture.ts screenshot taken for EACH target (one per state/variant)
-- [ ] **6-2.** Claude visual comparison for EACH target (local files only, no MCP)
-- [ ] **6-3.** ALL targets marked PASS — no target skipped — **STOP, wait for user**
+- [ ] **5-1.** Visual Test List built (≥ 1 VT item per Figma nodeId from Phase 0) — **STOP, wait for user**
+- [ ] **5-2.** Expected images downloaded for ALL VT items via figma-export.ts (REST API, NOT MCP)
+- [ ] **5-3.** Download verified — ALL VT items have expected images on disk
+- [ ] **6-1.** capture.ts screenshot taken for EACH VT item (one per state/variant)
+- [ ] **6-2.** Claude visual comparison for EACH VT item (local files only, no MCP)
+- [ ] **6-3.** ALL VT items marked ✅ PASS — no item skipped — **STOP, wait for user**
 - [ ] **7-1.** Baseline saved, artifacts committed
 
 ---
