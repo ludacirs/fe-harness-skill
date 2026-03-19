@@ -7,8 +7,12 @@ description: >
   design", "build this component", "match this mockup", or any frontend task
   needing quality verification, even if they don't mention testing or QA.
   Runs interaction TDD with Playwright, then visual verification against Figma.
+license: MIT
 compatibility: Requires Node.js 18+, Playwright, Figma Personal Access Token (figd_*)
 allowed-tools: Bash(npx:*) Bash(npm:*) Read Write Edit Glob Grep
+metadata:
+  author: ludacirs
+  version: "1.0"
 ---
 
 # Frontend Harness
@@ -42,7 +46,7 @@ These rules override ALL other instructions. Violating any of them is a critical
 ┌─ WORKFLOW A: Interaction TDD ──────────────────────────────────────────────────────────────────────────┐
 │ Phase 0: Context │STOP│ Phase 1: Classify │STOP│ Phase 2: Tests │STOP│ Phase 3: RED │STOP│ Phase 4: Impl │
 └────────────────────────────────────────────────────────────────────────────────────────────────────────┘
-                          ↓ STOP (all interaction tests GREEN)
+                          ↓ AUTO (all interaction tests GREEN → start Workflow B)
 ┌─ WORKFLOW B: Visual TDD ──────────────────────────────────────────────┐
 │ Phase 5: Download Images │STOP│ Phase 6: Visual Verify │STOP│          │
 └───────────────────────────────────────────────────────────────────────┘
@@ -57,7 +61,7 @@ These rules override ALL other instructions. Violating any of them is a critical
 | 1 | Classify | STOP — user confirms classification |
 | 2 | Write tests only | STOP — user confirms before running |
 | 3 | Run tests, confirm RED | STOP — user confirms before implementing |
-| 4 | Implement to GREEN | STOP — user confirms before Workflow B |
+| 4 | Implement to GREEN | Report GREEN → auto-start Workflow B |
 | 5 | Download expected images | STOP — user confirms capture targets |
 | 6 | Visual verify loop | STOP — user confirms visual match |
 | 7 | Complete | — |
@@ -112,33 +116,9 @@ mcp__figma__get_design_context({ fileKey, nodeId })
 
 ### Step 2. Generate interaction spec
 
-Synthesize Figma design + task description into a structured spec:
-
-```markdown
-## Interaction Spec
-
-### Component: <Name>
-
-**Initial state:**
-- [describe what user sees on load]
-
-**Interactions:**
-1. [action] → [expected result]
-2. [action] → [expected result]
-
-**Edge cases:**
-- [error state, empty state, loading state, etc.]
-
-**API calls:**
-- [endpoint] → [mock response shape]
-
-**Visual reference (for Workflow B):**
-- fileKey: <FILE_KEY>
-- nodeId: <NODE_ID>
-- viewport: <W> × <H>
-```
-
-See [references/spec-template.md](references/spec-template.md) for full template.
+Synthesize Figma design + task description into a structured spec.
+Follow the template in [references/spec-template.md](references/spec-template.md).
+Must include: initial state, interactions, edge cases, API calls, and visual reference (fileKey, nodeId, viewport).
 
 ### Step 3. Clarify unknowns
 
@@ -209,18 +189,9 @@ Tell the user:
 
 ### Prerequisites
 
-**Playwright Test setup** — if the project doesn't have it, set it up:
-- `playwright.config.ts` at project root
-- `e2e/` directory for test files
-- This setup is **permanent** — it stays in the project as harness infrastructure.
-
-**`/dev/preview` route** — for component-type tasks:
-- URL pattern: `/dev/preview?component=<ComponentName>`
-- Place outside auth layout groups (no login required)
-- Add dev-only guard (`import.meta.env.DEV` or equivalent)
-- Separate preview wrapper per component (e.g., `<Name>.preview.tsx`)
-- For components with API calls: register MSW handlers or use `page.route()`
-  in the preview file
+Set up if not present: `playwright.config.ts` at root, `e2e/` directory.
+For component tasks, create a `/dev/preview?component=<Name>` route (dev-only guard, outside auth layout).
+See [references/test-setup-guide.md](references/test-setup-guide.md) for full setup details.
 
 ### Test base URL by task type
 
@@ -240,41 +211,9 @@ Write tests for **all** spec items at once in `e2e/<task>.spec.ts`.
 
 ### Step 2. Handle API mocking
 
-```
-Does the task make API calls?
-  │
-  ├── No → proceed without mocking
-  │
-  └── Yes → detect project mocking infrastructure:
-        │
-        ├── MSW present (msw in package.json)
-        │   → Use existing handlers or add new ones
-        │   → For component preview routes, configure handlers in the preview file if needed
-        │
-        └── No MSW
-            → Use page.route() inline in test files:
-              await page.route('**/api/login', route =>
-                route.fulfill({ status: 200, body: JSON.stringify({ token: '...' }) })
-              );
-
-If API endpoints or response shapes are unknown → ask human.
-```
-
-Mock data is stored in `e2e/mocks/` for reuse across tests.
-
-#### API mock troubleshooting
-
-| Symptom | Cause | Fix |
-|---------|-------|-----|
-| `page.route('**/api/...')` not intercepting | API host is an absolute external URL (e.g., `http://172.168.x.x/api/...`). Glob patterns like `**/api` only match relative paths. | Use the full URL pattern: `page.route('http://172.168.x.x/api/users', ...)` or `page.route('**/172.168.x.x/**', ...)` |
-| Mock works in test but not in capture.ts | capture.ts uses `--mock-routes` JSON, not Playwright test fixtures | Pass mock routes via `--mock-routes mock-routes.json`. See `references/mock-routes-example.json` |
-| Component renders with real data instead of mock | MSW handlers not registered in preview file, or dev server not using MSW | Check that preview file imports and activates MSW worker; or use `page.route()` as fallback |
-| Mock returns but component shows loading spinner | Response shape doesn't match what component expects | Log `mock.response` and compare with component's API type definition |
-
-**When `page.route()` doesn't work at all:**
-1. Check if the project uses a dev preview page (`/dev/preview?component=...`) with built-in MSW handlers — prefer that over `page.route()`
-2. Check `VITE_API_HOST` / `NEXT_PUBLIC_API_URL` env vars — if they point to an external host, use the full URL in `page.route()`
-3. As last resort, create a test-specific environment config that points API calls to a localhost mock server
+If the task makes API calls: use MSW (if present in package.json) or `page.route()` inline.
+Mock data goes in `e2e/mocks/`. If endpoints or response shapes are unknown → ask human.
+See [references/mock-troubleshooting.md](references/mock-troubleshooting.md) for decision tree and common fixes.
 
 ### Phase 2 output
 
@@ -352,12 +291,13 @@ Stall counter reaches 3 → stop and escalate to human:
 - [ ] All tests PASS (GREEN confirmed — 0 failures)
 - [ ] If any test fails, fix implementation FIRST
 
-### >>> STOP — Present to user and wait <<<
+### >>> STOP — Report GREEN, then auto-start Workflow B <<<
 
 Tell the user:
-> "Phase 4 complete. All N tests GREEN. Ready to move to Visual TDD (Workflow B)?"
+> "Phase 4 complete — Workflow A (Interaction TDD) is done. All N tests GREEN.
+> Moving to Workflow B (Visual TDD)."
 
-**Do NOT proceed to Workflow B until the user confirms.**
+**After reporting GREEN, immediately proceed to Phase 5 (Workflow B). Do NOT wait for user confirmation to start Workflow B — the transition is automatic.**
 
 ---
 
@@ -399,7 +339,7 @@ Use the `fileKey` and `nodeId` saved from Phase 0 (or from the Figma URL if styl
 
 ```bash
 export FIGMA_TOKEN=<TOKEN>   # or set in .env
-npx tsx ~/.claude/skills/fe-harness/scripts/figma-export.ts \
+npx tsx scripts/figma-export.ts \
   --file-key <FILE_KEY> --node-ids <NODE_ID> \
   --out visual-qa/expected --scale 1
 ```
@@ -430,12 +370,24 @@ npm run dev &
 npx wait-on http://localhost:<PORT>
 ```
 
-### Step 2. Capture screenshot
+### Step 2–4. For EACH capture target — capture, compare, iterate
+
+**You MUST repeat Steps 2–4 for EVERY capture target confirmed in Phase 5.**
+Do NOT move to the STOP gate until ALL targets have been verified.
+
+Track progress as a checklist (one entry per target from Phase 5).
+
+**For each target:**
+
+#### Step 2. Capture screenshot
+
+Each target may require different **browser state** (e.g., toggle ON vs OFF,
+modal open vs closed). Set up the correct state before capturing (navigate, trigger interaction, then capture):
 
 ```bash
-npx tsx ~/.claude/skills/fe-harness/scripts/capture.ts \
+npx tsx scripts/capture.ts \
   --url  http://localhost:<PORT>/<route-or-preview> \
-  --out  visual-qa/actual/<task>.png \
+  --out  visual-qa/actual/<target-name>.png \
   --type <component|page|flow> \
   --width <W> --height <H>
 ```
@@ -445,43 +397,47 @@ npx tsx ~/.claude/skills/fe-harness/scripts/capture.ts \
 
 Width/height must match the Figma frame dimensions saved from Phase 0.
 
-### Step 3. Compare with Figma (Claude visual comparison — local files only)
+#### Step 3. Compare with Figma (Claude visual comparison — local files only)
 
-> **NEVER use `diff.ts` for Figma-vs-browser comparison.** Pixel-level diffing
-> across different rendering engines (Figma vs Chromium) produces false positives
-> due to font rendering, anti-aliasing, and sub-pixel differences. `diff.ts` is
-> for browser-vs-browser regression ONLY (Phase 7).
->
-> **NEVER call Figma MCP here.** Use the downloaded file from Phase 5.
+> **NEVER use `diff.ts` here** (see Gotchas). **NEVER call Figma MCP here.**
 
 Present both **local** images to Claude for comparison:
-1. `visual-qa/expected/<task>.png` (downloaded from Figma REST API in Phase 5)
-2. `visual-qa/actual/<task>.png` (captured screenshot)
+1. `visual-qa/expected/<target-name>.png` (from Phase 5)
+2. `visual-qa/actual/<target-name>.png` (captured screenshot)
 
 Claude judges: layout, spacing, colors, typography, overall fidelity.
 
-### Step 4. Iterate
+#### Step 4. Iterate this target
 
 If Claude identifies differences:
 - Fix CSS/styles
 - Wait for hot reload
-- Re-run capture.ts (Step 2)
+- Re-run capture.ts (Step 2) **for this target**
 - Re-compare (Step 3)
 
-**Exit condition:** same stall counter as Phase 4 (3 stalls → escalate).
+**Exit condition per target:** stall counter = 3 → escalate to human.
 
-### Step 5. Save baseline
+When this target passes, mark it done and move to the **next target**.
 
-When visual verification passes:
-- The final actual screenshot becomes the **regression baseline**
-- Copy to `visual-qa/expected/<task>-baseline.png`
-- Future changes use `diff.ts` (pixelmatch) against this baseline
+**IMPORTANT: Do NOT skip remaining targets. ALL targets must reach visual GREEN
+before proceeding to Step 5.**
+
+### Step 5. Save baselines
+
+When ALL targets pass visual verification:
+- Each final actual screenshot becomes a **regression baseline**
+- Copy each to `visual-qa/expected/<target-name>-baseline.png`
+- Future changes use `diff.ts` (pixelmatch) against these baselines
   (browser vs browser comparison IS reliable)
 
 ### >>> STOP — Present visual verification results to user and wait <<<
 
 Tell the user:
-> "Phase 6 complete. All visual targets match. Ready to finalize (Phase 7)?"
+> "Phase 6 complete. All N/N visual targets verified:
+> - [target 1]: PASS
+> - [target 2]: PASS
+> - ...
+> Ready to finalize (Phase 7)?"
 
 **Do NOT proceed to Phase 7 until the user confirms.**
 
@@ -489,61 +445,31 @@ Tell the user:
 
 ## PHASE 7 — Completion & Harness Accumulation
 
-### Artifacts that stay in the project
-
-```
-e2e/<task>.spec.ts              ← interaction tests (cumulative)
-e2e/mocks/                      ← API mock data (reusable)
-dev/preview/<Component>.tsx     ← preview routes (cumulative)
-visual-qa/expected/             ← baseline screenshots (commit)
-visual-qa/config.json           ← per-task thresholds (commit)
-playwright.config.ts            ← created once, permanent
-```
-
-### .gitignore additions
-
-```
-visual-qa/actual/
-visual-qa/diff/
-```
-
-### Regression: diff.ts for future changes
-
-After baseline is established, future tasks can run:
-
-```bash
-npx tsx ~/.claude/skills/fe-harness/scripts/diff.ts \
-  --expected visual-qa/expected/<task>-baseline.png \
-  --actual   visual-qa/actual/<task>.png \
-  --diff     visual-qa/diff/<task>.png \
-  --threshold 0.5
-```
-
-This catches unintended visual regressions (browser vs browser = reliable).
+See [references/completion-guide.md](references/completion-guide.md) for artifact list, .gitignore additions, and regression testing setup.
 
 ---
 
 ## Checklist
 
 ### Workflow A — Interaction TDD
-- [ ] **Phase 0:** Figma MCP design context gathered (tokens, structure, dimensions)
-- [ ] **Phase 0:** fileKey, nodeId, viewport dimensions saved for Workflow B
-- [ ] **Phase 0:** Interaction spec generated — **STOP, wait for user to confirm spec**
-- [ ] **Phase 1:** Complexity classified (style-only / interactive / ambiguous → asked) — **STOP, wait for user to confirm classification**
-- [ ] **Phase 2:** `/dev/preview` route exists (component tasks)
-- [ ] **Phase 2:** API mocking strategy determined (MSW / page.route / none)
-- [ ] **Phase 2:** All tests written in `e2e/<task>.spec.ts` — **STOP, wait for user**
-- [ ] **Phase 3:** Tests run, all RED confirmed — **STOP, wait for user**
-- [ ] **Phase 4:** Implementation complete, all GREEN confirmed — **STOP, wait for user**
+- [ ] **0-1.** Figma MCP design context gathered (tokens, structure, dimensions)
+- [ ] **0-2.** fileKey, nodeId, viewport dimensions saved for Workflow B
+- [ ] **0-3.** Interaction spec generated — **STOP, wait for user to confirm spec**
+- [ ] **1-1.** Complexity classified (style-only / interactive / ambiguous → asked) — **STOP, wait for user to confirm classification**
+- [ ] **2-1.** `/dev/preview` route exists (component tasks)
+- [ ] **2-2.** API mocking strategy determined (MSW / page.route / none)
+- [ ] **2-3.** All tests written in `e2e/<task>.spec.ts` — **STOP, wait for user**
+- [ ] **3-1.** Tests run, all RED confirmed — **STOP, wait for user**
+- [ ] **4-1.** Implementation complete, all GREEN confirmed — **STOP, wait for user**
 
 ### Workflow B — Visual TDD
-- [ ] **Phase 5:** Capture target list enumerated and confirmed by human — **STOP, wait for user**
-- [ ] **Phase 5:** Expected images downloaded via figma-export.ts (REST API, NOT MCP)
-- [ ] **Phase 5:** Download verified (files exist on disk)
-- [ ] **Phase 6:** capture.ts screenshot taken for ALL targets
-- [ ] **Phase 6:** Claude visual comparison for ALL targets (local files only, no MCP)
-- [ ] **Phase 6:** Visual GREEN achieved for ALL targets — **STOP, wait for user**
-- [ ] **Phase 7:** Baseline saved, artifacts committed
+- [ ] **5-1.** Capture target list enumerated and confirmed by human — **STOP, wait for user**
+- [ ] **5-2.** Expected images downloaded via figma-export.ts (REST API, NOT MCP)
+- [ ] **5-3.** Download verified (files exist on disk)
+- [ ] **6-1.** capture.ts screenshot taken for EACH target (one per state/variant)
+- [ ] **6-2.** Claude visual comparison for EACH target (local files only, no MCP)
+- [ ] **6-3.** ALL targets marked PASS — no target skipped — **STOP, wait for user**
+- [ ] **7-1.** Baseline saved, artifacts committed
 
 ---
 
