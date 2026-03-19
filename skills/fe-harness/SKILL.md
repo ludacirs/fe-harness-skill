@@ -93,6 +93,7 @@ npx playwright install chromium --with-deps
   consecutive runs, stop and escalate to the human.
 - **Workflow B does NOT use Figma MCP.** Image download uses REST API only
   (`figma-export.ts`). Visual comparison uses Claude vision on local files only.
+- **Preview ≠ Production.** Duplicating markup means visual TDD verifies the copy, not the real page. See [references/preview-guide.md](references/preview-guide.md).
 
 ---
 
@@ -192,6 +193,10 @@ Tell the user:
 Set up if not present: `playwright.config.ts` at root, `e2e/` directory.
 For component tasks, create a `/dev/preview?component=<Name>` route (dev-only guard, outside auth layout).
 See [references/test-setup-guide.md](references/test-setup-guide.md) for full setup details.
+
+**CRITICAL:** Preview must import real production components — never copy-paste markup.
+See [references/preview-guide.md](references/preview-guide.md) for construction rules,
+file-based router handling, and monorepo setup.
 
 ### Test base URL by task type
 
@@ -312,36 +317,9 @@ Tell the user:
 
 ### Step 1. Enumerate capture targets — Visual Test List
 
-Before downloading, build a **Visual Test List** from Phase 0's Figma nodes.
-Every nodeId from Phase 0 MUST appear as at least one test item. Do NOT make
-additional Figma MCP calls — use the data already gathered.
-
-**Rule: nodeId count = minimum test count.** If Phase 0 saved 3 nodeIds, the
-Visual Test List must have at least 3 items (one per nodeId). Additional items
-(interactive states, data variants) may be added on top.
-
-```
-Build Visual Test List:
-  1. For EACH nodeId from Phase 0, create one test entry:
-     VT-1: <nodeId label> (nodeId: <X:Y>) → <figma-export filename>.png
-     VT-2: <nodeId label> (nodeId: <X:Y>) → <figma-export filename>.png
-     ...
-  2. For nodes with interactive states (hover, open, expanded, etc.),
-     add additional test entries with the SAME nodeId but different
-     capture conditions:
-     VT-N: <label> — <state> (nodeId: <X:Y>) → <filename>.png
-  3. Verify: every nodeId from Phase 0 has at least one VT entry.
-     If any nodeId is missing, add it before presenting.
-```
-
-**Visual Test List output format (present this exactly):**
-
-```
-Visual Test List (N items from M Figma nodes):
-  VT-1: [label] (nodeId: [X:Y], viewport: [WxH]) → expected/[name].png
-  VT-2: [label] (nodeId: [X:Y], viewport: [WxH]) → expected/[name].png
-  ...
-```
+Build a **Visual Test List** from Phase 0's Figma nodes (≥ 1 VT item per nodeId).
+See [references/figma-reference.md](references/figma-reference.md) §Visual Test List
+for the build procedure and output format.
 
 ### >>> STOP — Present Visual Test List to user and wait <<<
 
@@ -369,21 +347,9 @@ and scale matching details.
 
 ### Step 3. Verify download — ALL items
 
-Confirm expected images exist for EVERY Visual Test item:
-```bash
-ls -la visual-qa/expected/
-```
-
-Cross-check against the Visual Test List:
-```
-  VT-1: expected/[name].png — ✅ exists / ❌ missing
-  VT-2: expected/[name].png — ✅ exists / ❌ missing
-  ...
-```
-
-> **Do NOT proceed to Phase 6 until ALL expected image files exist.**
-> If any download fails, check FIGMA_TOKEN and nodeId format (must use colon: `123:456`).
-> Re-download missing items before continuing.
+Confirm expected images exist for EVERY Visual Test item (`ls -la visual-qa/expected/`).
+Cross-check each VT item: ✅ exists / ❌ missing. Do NOT proceed to Phase 6 until ALL exist.
+If any download fails, check FIGMA_TOKEN and nodeId format (colon: `123:456`).
 
 ---
 
@@ -456,7 +422,13 @@ If Claude identifies differences:
 When this target passes, mark it done and move to the **next target**.
 
 **IMPORTANT: Do NOT skip remaining targets. ALL targets must reach visual GREEN
-before proceeding to Step 5.**
+before proceeding to Step 4-b.**
+
+#### Step 4-b. Verify actual route (when accessible)
+
+After ALL preview targets pass, capture the actual production route and compare
+it against the preview screenshot to detect drift.
+See [references/route-verification.md](references/route-verification.md) for details.
 
 ### Step 5. Save baselines
 
@@ -509,7 +481,8 @@ See [references/completion-guide.md](references/completion-guide.md) for artifac
 - [ ] **5-3.** Download verified — ALL VT items have expected images on disk
 - [ ] **6-1.** capture.ts screenshot taken for EACH VT item (one per state/variant)
 - [ ] **6-2.** Claude visual comparison for EACH VT item (local files only, no MCP)
-- [ ] **6-3.** ALL VT items marked ✅ PASS — no item skipped — **STOP, wait for user**
+- [ ] **6-3.** ALL VT items marked ✅ PASS — no item skipped
+- [ ] **6-4.** Actual route vs preview comparison (Step 4-b) — drift check passed — **STOP, wait for user**
 - [ ] **7-1.** Baseline saved, artifacts committed
 
 ---
