@@ -72,3 +72,37 @@ npx tsx skills/fe-harness/scripts/figma-export.ts \
 Expected and actual images must have the same pixel dimensions:
 - `--scale 1` (default) matches Playwright's default `deviceScaleFactor: 1`
 - For 2x: use both `figma-export.ts --scale 2` and `capture.ts --device-scale-factor 2`
+
+---
+
+## Visual Test List — Build Procedure
+
+Before downloading expected images, build a Visual Test List from Phase 0's
+Figma nodes. Every nodeId from Phase 0 MUST appear as at least one test item.
+Do NOT make additional Figma MCP calls — use the data already gathered.
+
+**Rule: nodeId count = minimum test count.** If Phase 0 saved 3 nodeIds, the
+Visual Test List must have at least 3 items (one per nodeId).
+
+### Steps
+
+1. For EACH nodeId from Phase 0, create one test entry:
+   ```
+   VT-1: <nodeId label> (nodeId: <X:Y>) → <figma-export filename>.png
+   VT-2: <nodeId label> (nodeId: <X:Y>) → <figma-export filename>.png
+   ```
+2. For nodes with interactive states (hover, open, expanded, etc.),
+   add additional entries with the SAME nodeId but different capture conditions:
+   ```
+   VT-N: <label> — <state> (nodeId: <X:Y>) → <filename>.png
+   ```
+3. Verify: every nodeId from Phase 0 has at least one VT entry.
+
+### Output format (present this exactly)
+
+```
+Visual Test List (N items from M Figma nodes):
+  VT-1: [label] (nodeId: [X:Y], viewport: [WxH]) → expected/[name].png
+  VT-2: [label] (nodeId: [X:Y], viewport: [WxH]) → expected/[name].png
+  ...
+```
