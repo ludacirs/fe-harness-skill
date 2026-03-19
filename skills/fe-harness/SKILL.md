@@ -19,19 +19,50 @@ Split into two **independent workflows** that run sequentially:
 1. **Workflow A — Interaction TDD**: Figma MCP for design context → spec → e2e tests → implement (behavior)
 2. **Workflow B — Visual TDD**: Download Figma images → capture screenshot → compare → iterate (appearance)
 
+## ABSOLUTE RULES — Read before anything else
+
+These rules override ALL other instructions. Violating any of them is a critical failure.
+
+1. **NEVER write implementation code before Phase 3 (RED) is confirmed.**
+   - No component files. No page files. No style files. No route files. No layout files.
+   - The ONLY code you may write before RED confirmation is **test code** (`.spec.ts`)
+     and **test infrastructure** (`/dev/preview` wrapper for component tasks).
+   - If you find yourself creating implementation `.tsx`, `.vue`, `.svelte`, or style files
+     before Phase 3 is complete, you have violated this rule. STOP and delete it.
+
+2. **Each phase ends with STOP.** You must present results to the user and
+   receive explicit confirmation before moving to the next phase. Do NOT
+   silently advance phases.
+
+3. **One phase = one job.** Do NOT combine work from multiple phases into
+   a single step. Phase 2 writes tests. Phase 3 runs them. Phase 4 implements.
+   These are three separate actions with two confirmation gates between them.
+
 ```
-┌─ WORKFLOW A: Interaction TDD ─────────────────────────────────────────────┐
-│ PHASE 0: MCP Context & Spec → PHASE 1: Classify → PHASE 2: Interaction TDD │
-└───────────────────────────────────────────────────────────────────────────┘
-                          ↓ (all interaction tests GREEN)
-┌─ WORKFLOW B: Visual TDD ──────────────────────────────────────────────────┐
-│ PHASE 3: Download Expected Images → PHASE 4: Visual Verify Loop           │
-└───────────────────────────────────────────────────────────────────────────┘
+┌─ WORKFLOW A: Interaction TDD ──────────────────────────────────────────────────────────────────────────┐
+│ Phase 0: Context │STOP│ Phase 1: Classify │STOP│ Phase 2: Tests │STOP│ Phase 3: RED │STOP│ Phase 4: Impl │
+└────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+                          ↓ STOP (all interaction tests GREEN)
+┌─ WORKFLOW B: Visual TDD ──────────────────────────────────────────────┐
+│ Phase 5: Download Images │STOP│ Phase 6: Visual Verify │STOP│          │
+└───────────────────────────────────────────────────────────────────────┘
                           ↓
-                   PHASE 5: Complete
+                   Phase 7: Complete
 ```
 
-> **style-only tasks**: Skip Workflow A → go directly to Workflow B.
+**Quick Reference:**
+| Phase | Job | Gate |
+|-------|-----|------|
+| 0 | Context & Spec | STOP — user confirms spec |
+| 1 | Classify | STOP — user confirms classification |
+| 2 | Write tests only | STOP — user confirms before running |
+| 3 | Run tests, confirm RED | STOP — user confirms before implementing |
+| 4 | Implement to GREEN | STOP — user confirms before Workflow B |
+| 5 | Download expected images | STOP — user confirms capture targets |
+| 6 | Visual verify loop | STOP — user confirms visual match |
+| 7 | Complete | — |
+
+> **style-only tasks**: Skip Workflow A → go directly to Workflow B (Phase 5).
 
 ## Setup
 
@@ -76,7 +107,7 @@ mcp__figma__get_design_context({ fileKey, nodeId })
 → frame width × height (save these for Workflow B viewport matching)
 ```
 
-> **No image download in this phase.** Images are downloaded in Workflow B (PHASE 3).
+> **No image download in this phase.** Images are downloaded in Workflow B (Phase 5).
 > Save the `fileKey`, `nodeId`, and frame dimensions for later use.
 
 ### Step 2. Generate interaction spec
@@ -121,6 +152,13 @@ Ask the human when:
 
 Present the generated spec. Human confirms or modifies. Spec is finalized.
 
+### >>> STOP — Present spec to user and wait <<<
+
+Tell the user:
+> "Phase 0 complete. Here is the interaction spec: [spec]. Confirm or modify?"
+
+**Do NOT proceed to Phase 1 until the user confirms the spec.**
+
 ---
 
 ## PHASE 1 — Complexity Classification
@@ -129,8 +167,8 @@ Classify **before** any implementation.
 
 | Complexity | Criteria | Path |
 |------------|----------|------|
-| **style-only** | Color, spacing, font, layout changes. No new interactions. | Skip to Workflow B (PHASE 3) |
-| **interactive** | New component, form, modal, navigation, state changes. | PHASE 2 → Workflow B |
+| **style-only** | Color, spacing, font, layout changes. No new interactions. | Skip to Workflow B (Phase 5) |
+| **interactive** | New component, form, modal, navigation, state changes. | Phase 2 → 3 → 4 → Workflow B |
 | **ambiguous** | Unclear whether interactions change. | Ask human (see below) |
 
 **When ambiguous, ask:**
@@ -140,31 +178,34 @@ Classify **before** any implementation.
 
 ### HARD GATE — No implementation without RED tests
 
-If classified as **interactive**, you MUST complete PHASE 2 before writing
-ANY implementation code (components, pages, flows, styles, routes, etc.).
+If classified as **interactive**, you MUST complete Phase 2 (write tests) AND
+Phase 3 (confirm RED) before writing ANY implementation code.
 
-The ONLY classification that skips PHASE 2 is **style-only**.
+The ONLY classification that skips to Workflow B is **style-only** (→ Phase 5).
 
-Verify before proceeding to implementation:
-- [ ] `e2e/<task>.spec.ts` exists
-- [ ] `npx playwright test e2e/<task>.spec.ts` has been run
-- [ ] All tests fail (RED confirmed)
-
-If any item is unmet, STOP and complete PHASE 2 first.
-
-### Invalid reasons to skip PHASE 2
+### Invalid reasons to skip Phases 2–3
 
 These are NOT valid reasons to skip Interaction TDD:
 - "The task is a full page, not a component." → Test at the page route URL.
 - "There are too many interactions." → Write tests for all of them.
 - "It will take too long." → Interaction TDD is a required process, not optional.
 - "No `/dev/preview` route is needed." → Use the actual page/flow route when the task is not a component.
+- "I'll write tests and implementation together." → NO. Phase 2 = tests only. Phase 4 = implementation only.
+
+### >>> STOP — Present classification to user and wait <<<
+
+Tell the user:
+> "Phase 1 complete. I classified this as [style-only/interactive]. Path: [Phase 2 or Phase 5]. Confirm?"
+
+**Do NOT proceed until the user confirms the classification.**
 
 ---
 
-## PHASE 2 — Interaction TDD Loop
+## PHASE 2 — Write All Tests
 
 > Skipped for style-only tasks.
+>
+> **This phase writes test code ONLY. No implementation code of any kind.**
 
 ### Prerequisites
 
@@ -189,9 +230,9 @@ These are NOT valid reasons to skip Interaction TDD:
 | Page | Actual page route (e.g. `/users`) |
 | Flow | Starting page route of the flow |
 
-### Step 1. Write all Playwright tests (before implementation)
+### Step 1. Write all Playwright tests
 
-Write tests for **all** spec items at once in `e2e/<task>.spec.ts`. Tests MUST fail (RED).
+Write tests for **all** spec items at once in `e2e/<task>.spec.ts`.
 
 - Use the correct base URL from the table above
 - One `test()` per interaction spec item
@@ -235,25 +276,66 @@ Mock data is stored in `e2e/mocks/` for reuse across tests.
 2. Check `VITE_API_HOST` / `NEXT_PUBLIC_API_URL` env vars — if they point to an external host, use the full URL in `page.route()`
 3. As last resort, create a test-specific environment config that points API calls to a localhost mock server
 
-### Step 3. Confirm RED
+### Phase 2 output
+
+The ONLY files created in this phase are:
+- `e2e/<task>.spec.ts` (test file)
+- `e2e/mocks/*.json` (mock data, if needed)
+- `dev/preview/<Component>.preview.tsx` (test infrastructure, only for component tasks)
+
+**If you created any implementation file (component, page, style, route, layout), you have violated the rules. Delete it now.**
+
+### >>> STOP — Present to user and wait <<<
+
+Tell the user:
+> "Phase 2 complete. I wrote N tests in `e2e/<task>.spec.ts`. Ready to run them and confirm RED?"
+
+**Do NOT run the tests yet. Do NOT proceed to Phase 3 until the user confirms.**
+
+---
+
+## PHASE 3 — Confirm RED
+
+> **This phase ONLY runs tests and confirms they fail. No implementation code.**
+
+### Step 1. Run tests
 
 ```bash
 npx playwright test e2e/<task>.spec.ts
 ```
 
-All tests must fail. If any pass unexpectedly, investigate.
+### Step 2. Verify RED
 
->>> HARD GATE: Do NOT proceed to implementation until ALL tests have been run and confirmed FAILING (RED). <<<
+All tests must fail. If any pass unexpectedly, investigate — something is wrong.
 
 - [ ] `npx playwright test e2e/<task>.spec.ts` executed
 - [ ] All tests FAIL (RED confirmed)
-- [ ] If tests cannot run (environment issue), fix the environment FIRST — do NOT skip to implementation
+- [ ] If tests cannot run (environment issue), fix the environment FIRST
 
-### Step 4. Implement → GREEN
+### >>> STOP — Present to user and wait <<<
+
+Tell the user:
+> "Phase 3 complete. All N tests are RED (failing as expected). Ready to start implementation?"
+
+**Do NOT write any implementation code until the user confirms.**
+**Do NOT combine this with Phase 4. Wait.**
+
+---
+
+## PHASE 4 — Implement to GREEN
+
+> **NOW you may write implementation code.** Only after Phase 3 RED is confirmed.
+
+### Step 1. Implement
 
 Implement the component/page/flow. Run tests after each significant change.
 
-**Exit condition — stall counter:**
+```bash
+npx playwright test e2e/<task>.spec.ts
+```
+
+### Step 2. Track progress — stall counter
+
 ```
 After each test run:
   Did the number of passing tests increase?
@@ -264,13 +346,18 @@ Stall counter reaches 3 → stop and escalate to human:
   "N/M tests passing. Stuck on: [failing test names]. Need guidance."
 ```
 
-### Workflow A complete
-
->>> HARD GATE: Do NOT proceed to Workflow B until ALL interaction tests PASS. <<<
+### Step 3. Confirm GREEN
 
 - [ ] `npx playwright test e2e/<task>.spec.ts` executed
 - [ ] All tests PASS (GREEN confirmed — 0 failures)
-- [ ] If any test fails, fix implementation FIRST — do NOT skip to Visual TDD
+- [ ] If any test fails, fix implementation FIRST
+
+### >>> STOP — Present to user and wait <<<
+
+Tell the user:
+> "Phase 4 complete. All N tests GREEN. Ready to move to Visual TDD (Workflow B)?"
+
+**Do NOT proceed to Workflow B until the user confirms.**
 
 ---
 
@@ -279,18 +366,18 @@ Stall counter reaches 3 → stop and escalate to human:
 > Does NOT use Figma MCP. Uses REST API for image download and Claude vision for comparison.
 > All visual references are local files only.
 
-## PHASE 3 — Download Expected Images
+## PHASE 5 — Download Expected Images
 
 > **This is the FIRST step of Workflow B.** Images MUST be downloaded before any visual comparison.
 
-### Step 0. Enumerate capture targets
+### Step 1. Enumerate capture targets
 
 Before downloading, list ALL visual states that need comparison. Use the Figma
-nodes and design context gathered in PHASE 0 — do NOT make additional Figma MCP calls.
+nodes and design context gathered in Phase 0 — do NOT make additional Figma MCP calls.
 
 ```
 Enumerate:
-  1. List every Figma node/frame from PHASE 0 (tables, modals, states, variants)
+  1. List every Figma node/frame from Phase 0 (tables, modals, states, variants)
   2. For each node, define capture scenarios:
      - Default state
      - Interactive states (hover, focus, open, expanded, etc.)
@@ -299,11 +386,16 @@ Enumerate:
   4. Track as checklist — ALL items must be captured before Visual TDD is complete
 ```
 
->>> HARD GATE: Do NOT download images until the capture target list is confirmed by the human. <<<
+### >>> STOP — Present capture target list to user and wait <<<
 
-### Step 1. Download Figma expected images via REST API
+Tell the user:
+> "Here are the capture targets I identified: [list]. Confirm before I download?"
 
-Use the `fileKey` and `nodeId` saved from PHASE 0 (or from the Figma URL if style-only).
+**Do NOT download images until the user confirms the capture target list.**
+
+### Step 2. Download Figma expected images via REST API
+
+Use the `fileKey` and `nodeId` saved from Phase 0 (or from the Figma URL if style-only).
 
 ```bash
 export FIGMA_TOKEN=<TOKEN>   # or set in .env
@@ -315,19 +407,19 @@ npx tsx ~/.claude/skills/fe-harness/scripts/figma-export.ts \
 See [references/figma-reference.md](references/figma-reference.md) for nodeId lookup
 and scale matching details.
 
-### Step 2. Verify download
+### Step 3. Verify download
 
 Confirm the expected image exists on disk:
 ```bash
 ls -la visual-qa/expected/
 ```
 
-> **Do NOT proceed to PHASE 4 until the expected image file exists.**
+> **Do NOT proceed to Phase 6 until the expected image file exists.**
 > If download fails, check FIGMA_TOKEN and nodeId format (must use colon: `123:456`).
 
 ---
 
-## PHASE 4 — Visual Verification Loop
+## PHASE 6 — Visual Verification Loop
 
 > No Figma MCP calls in this phase. All comparison uses local files + Claude vision.
 
@@ -351,19 +443,19 @@ npx tsx ~/.claude/skills/fe-harness/scripts/capture.ts \
 > Scripts resolve relative paths (like `--out visual-qa/actual/...`) against your
 > current working directory. No `cd` or `NODE_PATH` needed.
 
-Width/height must match the Figma frame dimensions saved from PHASE 0.
+Width/height must match the Figma frame dimensions saved from Phase 0.
 
 ### Step 3. Compare with Figma (Claude visual comparison — local files only)
 
 > **NEVER use `diff.ts` for Figma-vs-browser comparison.** Pixel-level diffing
 > across different rendering engines (Figma vs Chromium) produces false positives
 > due to font rendering, anti-aliasing, and sub-pixel differences. `diff.ts` is
-> for browser-vs-browser regression ONLY (PHASE 5).
+> for browser-vs-browser regression ONLY (Phase 7).
 >
-> **NEVER call Figma MCP here.** Use the downloaded file from PHASE 3.
+> **NEVER call Figma MCP here.** Use the downloaded file from Phase 5.
 
 Present both **local** images to Claude for comparison:
-1. `visual-qa/expected/<task>.png` (downloaded from Figma REST API in PHASE 3)
+1. `visual-qa/expected/<task>.png` (downloaded from Figma REST API in Phase 5)
 2. `visual-qa/actual/<task>.png` (captured screenshot)
 
 Claude judges: layout, spacing, colors, typography, overall fidelity.
@@ -376,7 +468,7 @@ If Claude identifies differences:
 - Re-run capture.ts (Step 2)
 - Re-compare (Step 3)
 
-**Exit condition:** same stall counter as PHASE 2 (3 stalls → escalate).
+**Exit condition:** same stall counter as Phase 4 (3 stalls → escalate).
 
 ### Step 5. Save baseline
 
@@ -386,9 +478,16 @@ When visual verification passes:
 - Future changes use `diff.ts` (pixelmatch) against this baseline
   (browser vs browser comparison IS reliable)
 
+### >>> STOP — Present visual verification results to user and wait <<<
+
+Tell the user:
+> "Phase 6 complete. All visual targets match. Ready to finalize (Phase 7)?"
+
+**Do NOT proceed to Phase 7 until the user confirms.**
+
 ---
 
-## PHASE 5 — Completion & Harness Accumulation
+## PHASE 7 — Completion & Harness Accumulation
 
 ### Artifacts that stay in the project
 
@@ -427,23 +526,24 @@ This catches unintended visual regressions (browser vs browser = reliable).
 ## Checklist
 
 ### Workflow A — Interaction TDD
-- [ ] Figma MCP design context gathered (tokens, structure, dimensions)
-- [ ] fileKey, nodeId, viewport dimensions saved for Workflow B
-- [ ] Interaction spec generated and confirmed by human
-- [ ] Complexity classified (style-only / interactive / ambiguous → asked)
-- [ ] `/dev/preview` route exists (component tasks)
-- [ ] API mocking strategy determined (MSW / page.route / none)
-- [ ] All interaction tests written → RED confirmed → GREEN achieved
+- [ ] **Phase 0:** Figma MCP design context gathered (tokens, structure, dimensions)
+- [ ] **Phase 0:** fileKey, nodeId, viewport dimensions saved for Workflow B
+- [ ] **Phase 0:** Interaction spec generated — **STOP, wait for user to confirm spec**
+- [ ] **Phase 1:** Complexity classified (style-only / interactive / ambiguous → asked) — **STOP, wait for user to confirm classification**
+- [ ] **Phase 2:** `/dev/preview` route exists (component tasks)
+- [ ] **Phase 2:** API mocking strategy determined (MSW / page.route / none)
+- [ ] **Phase 2:** All tests written in `e2e/<task>.spec.ts` — **STOP, wait for user**
+- [ ] **Phase 3:** Tests run, all RED confirmed — **STOP, wait for user**
+- [ ] **Phase 4:** Implementation complete, all GREEN confirmed — **STOP, wait for user**
 
 ### Workflow B — Visual TDD
-- [ ] Capture target list enumerated (all nodes, all states)
-- [ ] Capture target list confirmed by human
-- [ ] Expected images downloaded via figma-export.ts (REST API, NOT MCP)
-- [ ] Download verified (files exist on disk)
-- [ ] capture.ts screenshot taken for ALL targets
-- [ ] Claude visual comparison for ALL targets (local files only, no MCP)
-- [ ] Visual GREEN achieved for ALL targets
-- [ ] Baseline saved, artifacts committed
+- [ ] **Phase 5:** Capture target list enumerated and confirmed by human — **STOP, wait for user**
+- [ ] **Phase 5:** Expected images downloaded via figma-export.ts (REST API, NOT MCP)
+- [ ] **Phase 5:** Download verified (files exist on disk)
+- [ ] **Phase 6:** capture.ts screenshot taken for ALL targets
+- [ ] **Phase 6:** Claude visual comparison for ALL targets (local files only, no MCP)
+- [ ] **Phase 6:** Visual GREEN achieved for ALL targets — **STOP, wait for user**
+- [ ] **Phase 7:** Baseline saved, artifacts committed
 
 ---
 
