@@ -34,15 +34,24 @@ npm run setup
 ### Two feedback loops
 
 ```
-PHASE 0  Gather Figma design + generate interaction spec
-  ↓ [user confirms spec]
-PHASE 1  Classify complexity (style-only / interactive / ambiguous)
-  ↓ [user confirms classification]
-PHASE 2  Interaction TDD — write Playwright tests → RED → implement → GREEN
-  ↓ [user confirms to proceed]
-PHASE 3  Visual verification — capture screenshot → compare with Figma → iterate
-  ↓ [user confirms visual match]
-PHASE 4  Save baseline + accumulate harness artifacts in project
+Workflow A — Interaction TDD
+  PHASE 0  Gather Figma design + generate interaction spec
+    ↓ [user confirms spec]
+  PHASE 1  Classify complexity (style-only / interactive / ambiguous)
+    ↓ [user confirms classification]
+  PHASE 2  Write Playwright tests (test code only)
+    ↓ [user confirms tests]
+  PHASE 3  Run tests, confirm RED
+    ↓ [user confirms RED]
+  PHASE 4  Implement to GREEN
+    ↓ [user confirms GREEN]
+
+Workflow B — Visual TDD
+  PHASE 5  Download expected images from Figma REST API
+    ↓ [user confirms capture targets]
+  PHASE 6  Visual verification — capture screenshot → compare with Figma → iterate
+    ↓ [user confirms visual match]
+  PHASE 7  Save baseline + accumulate harness artifacts in project
 ```
 
 ### Adaptive complexity
