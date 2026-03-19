@@ -456,9 +456,19 @@ If any VT items remain ⬜ or ❌, you are NOT done. Continue processing.
 
 ---
 
-## PHASE 7 — Completion & Harness Accumulation
+## PHASE 7 — Completion & Report
 
-See [references/completion-guide.md](references/completion-guide.md) for artifact list, .gitignore additions, and regression testing setup.
+### Completion Report (MANDATORY)
+
+**You MUST output a structured completion report to the user.** Never end with just "완료" or a generic message. Follow the report template in [references/completion-guide.md](references/completion-guide.md).
+
+The report must include:
+1. Workflow A results (classification, test counts, TDD cycle details, stall info)
+2. Workflow B results (Visual Test List outcomes per VT item, iteration counts)
+3. All created/modified files with descriptions
+4. Issues or notes
+
+See [references/completion-guide.md](references/completion-guide.md) for the full template, artifact list, .gitignore additions, and regression testing setup.
 
 ---
 
