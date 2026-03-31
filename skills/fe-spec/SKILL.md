@@ -1,10 +1,11 @@
 ---
 name: fe-spec
 description: >
-  프론트엔드 UI 작업의 설계 컨텍스트 수집과 interaction spec 생성.
-  Figma 디자인 URL이 주어지면 Figma MCP로 디자인 컨텍스트를 수집하고,
-  기존 코드 경로가 주어지면 코드를 분석하여 spec을 생성한다.
-  "이 디자인 spec 만들어줘", "이 컴포넌트 분석해줘" 등의 요청 시 활성화.
+  Frontend UI design context collection and interaction spec generation.
+  Collects design context from a Figma URL via Figma MCP, or analyzes
+  existing code to generate a spec. Classifies complexity as style-only
+  or interactive. Activate on "create a spec for this design",
+  "analyze this component", "spec this page".
 license: MIT
 allowed-tools: Read Glob Grep
 metadata:
@@ -14,22 +15,22 @@ metadata:
 
 # Frontend Spec — Context & Classification
 
-Figma 디자인 또는 기존 코드에서 컨텍스트를 수집하고, interaction spec을 생성하고, 복잡도를 분류한다.
+Collect context from Figma design or existing code, generate an interaction spec, and classify complexity.
 
 ```dot
 digraph fe_spec {
   node [shape=box];
-  input [label="입력 분기" shape=diamond];
+  input [label="Input mode" shape=diamond];
   figma [label="Figma MCP\nget_design_context"];
-  code [label="코드 분석\nRead + Grep"];
-  spec [label="Interaction Spec 생성"];
-  clarify [label="Unknowns 질문"];
+  code [label="Code analysis\nRead + Grep"];
+  spec [label="Generate Interaction Spec"];
+  clarify [label="Ask unknowns"];
   confirm_spec [label="STOP\nuser confirms spec" style=bold];
-  classify [label="복잡도 분류\nstyle-only / interactive"];
+  classify [label="Complexity Classification\nstyle-only / interactive"];
   confirm_class [label="STOP\nuser confirms classification" style=bold];
 
   input -> figma [label="Figma URL"];
-  input -> code [label="코드 경로"];
+  input -> code [label="Code path"];
   figma -> spec;
   code -> spec;
   spec -> clarify;
@@ -41,21 +42,21 @@ digraph fe_spec {
 
 ## ABSOLUTE RULES
 
-1. **Spec 확인 전 다음 단계로 넘어가지 않는다.** user가 spec을 확인하기 전까지 분류(Classification)를 시작하지 않는다.
-2. **분류 확인 전 어떤 코드도 작성하지 않는다.** user가 분류를 확인하기 전까지 테스트든 구현이든 어떤 코드도 작성하지 않는다.
+1. **Do not proceed past spec confirmation.** Do not start classification until the user confirms the spec.
+2. **Do not write any code before classification is confirmed.** No test code, no implementation code — nothing until the user confirms the classification.
 
-## 입력 모드
+## Input Modes
 
-| 모드 | 입력 | 동작 |
-|------|------|------|
-| **Figma** | Figma URL (fileKey, nodeId) | Figma MCP `get_design_context` → 디자인 토큰, 구조, 인라인 스크린샷 |
-| **Code** | 파일 경로 또는 컴포넌트 이름 | 코드 읽기 → 현재 상태, 인터랙션, 라우팅 파악 |
+| Mode | Input | Action |
+|------|-------|--------|
+| **Figma** | Figma URL (fileKey, nodeId) | Figma MCP `get_design_context` → design tokens, structure, inline screenshot |
+| **Code** | File path or component name | Read code → identify current state, interactions, routing |
 
 ## Phase 0 — Context & Spec Generation
 
-### Figma 모드
+### Figma Mode
 
-#### Step 1. Figma MCP로 디자인 컨텍스트 수집
+#### Step 1. Collect design context via Figma MCP
 
 ```
 mcp__figma__get_design_context({ fileKey, nodeId })
@@ -64,97 +65,97 @@ mcp__figma__get_design_context({ fileKey, nodeId })
 → frame width × height (save for visual TDD viewport matching)
 ```
 
-> **No image download in this phase.** 이미지 다운로드는 fe-visual-tdd에서 한다.
-> `fileKey`, `nodeId`, frame dimensions를 저장한다.
+> **No image download in this phase.** Image downloads happen in fe-visual-tdd.
+> Save `fileKey`, `nodeId`, and frame dimensions.
 
-#### Step 2. Interaction spec 생성
+#### Step 2. Generate interaction spec
 
-Figma 디자인 + task description으로 구조화된 spec을 합성한다.
-[references/spec-template.md](references/spec-template.md) 템플릿을 따른다.
-포함 항목: initial state, interactions, edge cases, API calls, visual reference (fileKey, nodeId, viewport).
+Synthesize a structured spec from the Figma design + task description.
+Follow the [references/spec-template.md](references/spec-template.md) template.
+Include: initial state, interactions, edge cases, API calls, visual reference (fileKey, nodeId, viewport).
 
-### Code 모드
+### Code Mode
 
-#### Step 1. 코드 분석으로 컨텍스트 수집
+#### Step 1. Collect context via code analysis
 
 ```
-1. 대상 파일을 Read로 읽는다
-2. 관련 컴포넌트/페이지를 Grep으로 탐색한다
-3. 라우팅, 상태 관리, API 호출을 파악한다
-4. 현재 어떤 인터랙션이 있는지 목록화한다
+1. Read the target files
+2. Search for related components/pages with Grep
+3. Identify routing, state management, API calls
+4. List current interactions
 ```
 
-#### Step 2. Interaction spec 생성
+#### Step 2. Generate interaction spec
 
-현재 코드 상태 기반으로 spec을 합성한다.
-[references/spec-template.md](references/spec-template.md) 템플릿을 따른다.
-포함 항목: initial state, interactions, edge cases, API calls.
-Visual Reference 섹션은 Figma 없이 생략하거나, viewport만 명시한다.
+Synthesize a spec based on the current code state.
+Follow the [references/spec-template.md](references/spec-template.md) template.
+Include: initial state, interactions, edge cases, API calls.
+Visual Reference section can be omitted or limited to viewport only when there is no Figma.
 
-### 공통 — Step 3. Unknowns 질문
+### Common — Step 3. Ask unknowns
 
-다음 경우 user에게 질문한다:
-- Figma에 state variants (hover, loading, error)가 없지만 예상되는 경우
-- 버튼이 있지만 클릭 후 동작이 불분명한 경우
-- API 호출이 예상되지만 성공/실패 처리가 디자인에 없는 경우
-- 조건부 렌더링이 있지만 조건이 불분명한 경우
+Ask the user when:
+- Figma is missing state variants (hover, loading, error) that are expected
+- A button exists but the post-click behavior is unclear
+- API calls are expected but success/failure handling is not in the design
+- Conditional rendering exists but conditions are unclear
 
-### 공통 — Step 4. User confirms spec
+### Common — Step 4. User confirms spec
 
-생성된 spec을 제시한다. user가 확인하거나 수정한다.
+Present the generated spec. The user confirms or requests revisions.
 
-### >>> STOP — Spec을 제시하고 대기 <<<
+### >>> STOP — Present spec and wait <<<
 
-> "Phase 0 완료. Interaction spec은 다음과 같습니다: [spec]. 확인 또는 수정해주세요."
+> "Phase 0 complete. Here is the interaction spec: [spec]. Please confirm or request changes."
 
 <HARD-GATE>
-User가 spec을 확인하기 전까지 Phase 1로 진행하지 않는다.
+Do not proceed to Phase 1 until the user confirms the spec.
 </HARD-GATE>
 
 ---
 
 ## Phase 1 — Complexity Classification
 
-**구현 전에** 분류한다.
+Classify **before** any implementation.
 
 | Complexity | Criteria | Path |
 |------------|----------|------|
-| **style-only** | 색상, 간격, 폰트, 레이아웃 변경. 새 인터랙션 없음. | fe-visual-tdd만 |
-| **interactive** | 새 컴포넌트, 폼, 모달, 네비게이션, 상태 변경. | fe-interaction-tdd → fe-visual-tdd |
-| **ambiguous** | 인터랙션 변경 여부 불분명. | user에게 질문 |
+| **style-only** | Color, spacing, font, layout changes only. No new interactions. | fe-visual-tdd only |
+| **interactive** | New components, forms, modals, navigation, state changes. | fe-interaction-tdd → fe-visual-tdd |
+| **ambiguous** | Unclear whether interactions change. | Ask the user |
 
-**Ambiguous일 때 질문:**
-- "이 작업은 스타일만 변경하나요, 인터랙션 변경도 있나요?"
-- "기존 동작이 그대로 유지되나요?"
+**When ambiguous, ask:**
+- "Does this task change only styles, or does it also change interactions?"
+- "Does existing behavior remain unchanged?"
 
-### Rationalization Table — 이 생각이 들면 STOP
+### Rationalization Table — If you think this, STOP
 
-| 이런 생각이 들면 | 실제로 해야 할 것 |
-|-----------------|------------------|
-| "이건 간단한 변경이니까 spec 없이 바로 하자" | spec을 먼저 만들어라. 간단해 보여도 scope이 불분명할 수 있다. |
-| "코드를 보면 뭘 해야 할지 알 수 있으니 spec은 필요없다" | 코드를 봐서 알 수 있는 건 현재 상태이지, 목표 상태가 아니다. spec을 만들어라. |
-| "분류가 너무 뻔해서 user 확인은 건너뛰자" | 뻔하더라도 반드시 user 확인을 받아라. 잘못된 분류 → 잘못된 전체 경로. |
+| If you think… | What you must do |
+|----------------|-----------------|
+| "This is a simple change, skip the spec" | Create the spec first. Even simple-looking tasks can have unclear scope. |
+| "I can tell what to do from the code, no spec needed" | Code shows current state, not the target state. Create the spec. |
+| "Classification is obvious, skip user confirmation" | Always get user confirmation. Wrong classification → wrong entire path. |
 
-### >>> STOP — 분류 결과를 제시하고 대기 <<<
+### >>> STOP — Present classification and wait <<<
 
-> "Phase 1 완료. 이 작업을 [style-only/interactive]로 분류했습니다. 경로: [fe-visual-tdd만 / fe-interaction-tdd → fe-visual-tdd]. 확인해주세요."
+> "Phase 1 complete. Classified as [style-only/interactive]. Path: [fe-visual-tdd only / fe-interaction-tdd → fe-visual-tdd]. Please confirm."
 
 <HARD-GATE>
-User가 분류를 확인하기 전까지 어떤 코드도 작성하지 않는다.
+Do not write any code until the user confirms the classification.
 </HARD-GATE>
 
 ## Output
 
-이 스킬의 출력:
-1. **Interaction spec** — 구조화된 spec 문서
-2. **분류 결과** — `style-only` 또는 `interactive`
-3. **저장된 메타데이터** — fileKey, nodeId, viewport dimensions (Figma 모드일 때)
+This skill produces:
+1. **Interaction spec** — structured spec document
+2. **Classification** — `style-only` or `interactive`
+3. **Saved metadata** — fileKey, nodeId, viewport dimensions (Figma mode only)
 
-다음 스킬(fe-interaction-tdd 또는 fe-visual-tdd)이 이 출력을 입력으로 받는다.
+The next skill (fe-interaction-tdd or fe-visual-tdd) receives this output as input.
 
 ## Checklist
 
-- [ ] 디자인 컨텍스트 수집 완료 (Figma MCP 또는 코드 분석)
-- [ ] fileKey, nodeId, viewport dimensions 저장 (Figma 모드)
-- [ ] Interaction spec 생성 — **STOP, user 확인 대기**
-- [ ] 복잡도 분류 (style-only / interactive / ambiguous → 질문) — **STOP, user 확인 대기**
+- [ ] Design context collected (Figma MCP or code analysis)
+- [ ] fileKey, nodeId, viewport dimensions saved (Figma mode)
+- [ ] Interaction spec generated — **STOP, wait for user confirmation**
+- [ ] Complexity classified (style-only / interactive / ambiguous → ask) — **STOP, wait for user confirmation**

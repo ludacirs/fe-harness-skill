@@ -1,11 +1,12 @@
 ---
 name: fe-interaction-tdd
 description: >
-  프론트엔드 UI의 interaction TDD 스킬. Playwright e2e 테스트를 먼저 작성하고,
-  RED를 확인한 후 구현하여 GREEN을 달성한다. fe-spec의 출력(interaction spec)을
-  입력으로 받거나, 기존 코드 경로만으로 독립 실행할 수 있다.
-  "이 페이지에 e2e 테스트 추가해줘", "이 컴포넌트 테스트 작성해줘" 등의 요청 시 활성화.
-  superpowers test-driven-development를 프론트엔드 작업에서 대체한다.
+  Frontend UI interaction TDD skill. Writes Playwright e2e tests first,
+  confirms RED, then implements to GREEN. Accepts interaction spec from
+  fe-spec or runs independently from an existing code path.
+  Activate on "add e2e tests to this page", "write tests for this component",
+  "test this interaction". Replaces superpowers test-driven-development
+  for frontend work.
 license: MIT
 compatibility: Requires Node.js 18+, Playwright
 allowed-tools: Bash(npx:*) Bash(npm:*) Read Write Edit Glob Grep
@@ -16,15 +17,15 @@ metadata:
 
 # Frontend Interaction TDD
 
-Playwright e2e 테스트를 먼저 작성 → RED 확인 → 구현 → GREEN.
+Write Playwright e2e tests first → confirm RED → implement → GREEN.
 
 ```dot
 digraph fe_interaction_tdd {
   node [shape=box];
 
-  input [label="입력 분기" shape=diamond];
-  has_spec [label="spec 기반\n테스트 작성"];
-  no_spec [label="코드 분석\n→ 자체 spec 생성\n→ 테스트 작성"];
+  input [label="Input mode" shape=diamond];
+  has_spec [label="Spec-based\ntest writing"];
+  no_spec [label="Code analysis\n→ self-generate spec\n→ test writing"];
   write_tests [label="Phase 2\nWrite All Tests"];
   stop_tests [label="STOP\nuser confirms tests" style=bold];
   red [label="Phase 3\nRun Tests → RED"];
@@ -32,8 +33,8 @@ digraph fe_interaction_tdd {
   implement [label="Phase 4\nImplement → GREEN"];
   stop_green [label="STOP\nreport GREEN" style=bold];
 
-  input -> has_spec [label="spec 있음"];
-  input -> no_spec [label="spec 없음\n(독립 트리거)"];
+  input -> has_spec [label="spec provided"];
+  input -> no_spec [label="no spec\n(independent trigger)"];
   has_spec -> write_tests;
   no_spec -> write_tests;
   write_tests -> stop_tests;
@@ -46,140 +47,140 @@ digraph fe_interaction_tdd {
 
 ## ABSOLUTE RULES
 
-1. **RED 확인 전 구현 코드를 절대 작성하지 않는다.**
-   - 컴포넌트 파일, 페이지 파일, 스타일 파일, 라우트 파일, 레이아웃 파일 금지.
-   - RED 확인 전 허용되는 코드는 **테스트 코드** (`.spec.ts`)와
-     **테스트 인프라** (`/dev/preview` 래퍼)뿐이다.
-   - `.tsx`, `.vue`, `.svelte`, 스타일 파일을 Phase 3 전에 만들었다면
-     규칙 위반이다. 즉시 삭제하라.
+1. **Never write implementation code before confirming RED.**
+   - No component files, page files, style files, route files, layout files.
+   - The only code allowed before RED confirmation is **test code** (`.spec.ts`) and
+     **test infrastructure** (`/dev/preview` wrappers).
+   - If you created `.tsx`, `.vue`, `.svelte`, or style files before Phase 3,
+     that is a rule violation. Delete them immediately.
 
-2. **각 Phase는 STOP으로 끝난다.** 결과를 user에게 제시하고
-   명시적 확인을 받은 후에만 다음 Phase로 이동한다.
+2. **Each Phase ends with STOP.** Present results to the user and
+   get explicit confirmation before moving to the next Phase.
 
-3. **한 Phase = 한 작업.** 여러 Phase의 작업을 하나로 합치지 않는다.
-   Phase 2는 테스트 작성. Phase 3은 실행. Phase 4는 구현.
-   세 개의 별도 단계이며, 사이에 두 개의 확인 게이트가 있다.
+3. **One Phase = one task.** Do not combine work from multiple Phases.
+   Phase 2 is test writing. Phase 3 is running. Phase 4 is implementation.
+   Three separate steps with two confirmation gates between them.
 
-### Rationalization Table — 이 생각이 들면 STOP
+### Rationalization Table — If you think this, STOP
 
-| 이런 생각이 들면 | 실제로 해야 할 것 |
-|-----------------|------------------|
-| "이건 간단해서 테스트 안 해도 돼" | 모든 interactive 작업은 테스트가 필수다. |
-| "전체 페이지라서 테스트하기 어렵다" | 페이지 라우트 URL로 테스트한다. |
-| "인터랙션이 너무 많아서 전부 테스트는 힘들다" | 전부 테스트를 작성한다. 그게 이 스킬의 목적이다. |
-| "시간이 너무 오래 걸린다" | Interaction TDD는 필수 프로세스이지, 선택이 아니다. |
-| "테스트와 구현을 같이 하면 효율적이다" | Phase 2 = 테스트만. Phase 4 = 구현만. 절대 합치지 않는다. |
-| "/dev/preview 라우트는 필요없다" | 컴포넌트 작업이 아닌 경우만 해당. 페이지/플로우는 실제 라우트를 쓴다. |
+| If you think… | What you must do |
+|----------------|-----------------|
+| "This is too simple to need tests" | All interactive work requires tests. |
+| "It's a full page, hard to test" | Test via the page route URL. |
+| "Too many interactions to test all of them" | Write tests for all of them. That's this skill's purpose. |
+| "This is taking too long" | Interaction TDD is a required process, not optional. |
+| "Writing tests and implementation together is more efficient" | Phase 2 = tests only. Phase 4 = implementation only. Never combine. |
+| "/dev/preview route isn't needed" | Only true for non-component tasks. Pages/flows use their actual route. |
 
 ## Setup
 
-프로젝트에 Playwright가 없으면 설치한다:
+If the project doesn't have Playwright, install it:
 
 ```bash
 npm install -D playwright pixelmatch pngjs tsx
 npx playwright install chromium --with-deps
 ```
 
-## 입력 모드
+## Input Modes
 
-| 모드 | 입력 | 동작 |
-|------|------|------|
-| **Spec 있음** | fe-spec 또는 brainstorming의 interaction spec | spec 기반으로 바로 테스트 작성 |
-| **Spec 없음** | 파일 경로 또는 컴포넌트 이름 (독립 트리거) | 코드 분석 → 자체 spec 생성 → 테스트 작성 |
+| Mode | Input | Action |
+|------|-------|--------|
+| **Spec provided** | Interaction spec from fe-spec or brainstorming | Write tests directly from spec |
+| **No spec** | File path or component name (independent trigger) | Analyze code → self-generate spec → write tests |
 
-독립 트리거 시에도 동일한 STOP 게이트를 적용한다.
+The same STOP gates apply even when triggered independently.
 
 ---
 
 ## Phase 2 — Write All Tests
 
-> **이 Phase는 테스트 코드만 작성한다. 구현 코드는 어떤 종류도 금지.**
+> **This Phase writes test code only. No implementation code of any kind.**
 
 ### Prerequisites
 
-미설정 시: `playwright.config.ts` (프로젝트 루트), `e2e/` 디렉토리.
-컴포넌트 작업이면 `/dev/preview?component=<Name>` 라우트를 생성한다 (dev-only 가드, auth 레이아웃 밖).
-[references/test-setup-guide.md](references/test-setup-guide.md)에서 상세 설정을 확인한다.
+If not set up: `playwright.config.ts` (project root), `e2e/` directory.
+For component tasks, create a `/dev/preview?component=<Name>` route (dev-only guard, outside auth layout).
+See [references/test-setup-guide.md](references/test-setup-guide.md) for detailed setup.
 
-**CRITICAL:** Preview는 실제 프로덕션 컴포넌트를 import해야 한다 — 마크업 복사 금지.
-[references/preview-guide.md](references/preview-guide.md)에서 구성 규칙을 확인한다.
+**CRITICAL:** Preview must import the actual production component — never copy markup.
+See [references/preview-guide.md](references/preview-guide.md) for construction rules.
 
 ### Test base URL
 
 | Task type | Base URL |
 |-----------|----------|
 | Component | `/dev/preview?component=<ComponentName>` |
-| Page | 실제 페이지 라우트 (예: `/users`) |
-| Flow | 플로우 시작 페이지 라우트 |
+| Page | Actual page route (e.g., `/users`) |
+| Flow | Flow start page route |
 
-### Step 1. Playwright 테스트 전부 작성
+### Step 1. Write all Playwright tests
 
-`e2e/<task>.spec.ts`에 **모든** spec 항목의 테스트를 한 번에 작성한다.
+Write **all** spec items as tests in `e2e/<task>.spec.ts` at once.
 
-- 위 표의 올바른 base URL 사용
-- spec 항목당 하나의 `test()`
-- role 기반 셀렉터 우선 (`getByRole`, `getByLabel`)
+- Use the correct base URL from the table above
+- One `test()` per spec item
+- Prefer role-based selectors (`getByRole`, `getByLabel`)
 
-### Step 2. API 모킹 처리
+### Step 2. Handle API mocking
 
-API 호출이 있으면: MSW (package.json에 있으면) 또는 `page.route()` 인라인.
-목 데이터는 `e2e/mocks/`에 넣는다. 엔드포인트나 응답 형태를 모르면 → user에게 질문.
-[references/mock-troubleshooting.md](references/mock-troubleshooting.md)에서 결정 트리와 일반 수정법을 확인한다.
+If there are API calls: use MSW (if in package.json) or `page.route()` inline.
+Put mock data in `e2e/mocks/`. If endpoints or response shapes are unknown → ask the user.
+See [references/mock-troubleshooting.md](references/mock-troubleshooting.md) for the decision tree and common fixes.
 
 ### Phase 2 output
 
-이 Phase에서 생성하는 파일:
-- `e2e/<task>.spec.ts` (테스트 파일)
-- `e2e/mocks/*.json` (목 데이터, 필요 시)
-- `dev/preview/<Component>.preview.tsx` (테스트 인프라, 컴포넌트 작업만)
+Files created in this Phase:
+- `e2e/<task>.spec.ts` (test file)
+- `e2e/mocks/*.json` (mock data, if needed)
+- `dev/preview/<Component>.preview.tsx` (test infrastructure, component tasks only)
 
 <HARD-GATE>
-구현 파일(컴포넌트, 페이지, 스타일, 라우트, 레이아웃)을 만들었다면 규칙 위반이다. 즉시 삭제하라.
+If you created implementation files (components, pages, styles, routes, layouts), that is a rule violation. Delete them immediately.
 </HARD-GATE>
 
-### >>> STOP — User에게 제시하고 대기 <<<
+### >>> STOP — Present to user and wait <<<
 
-> "Phase 2 완료. `e2e/<task>.spec.ts`에 N개 테스트를 작성했습니다. 실행해서 RED를 확인할까요?"
+> "Phase 2 complete. Wrote N tests in `e2e/<task>.spec.ts`. Shall I run them to confirm RED?"
 
-**테스트를 아직 실행하지 않는다. User 확인 전까지 Phase 3으로 진행하지 않는다.**
+**Do not run tests yet. Do not proceed to Phase 3 until user confirms.**
 
 ---
 
 ## Phase 3 — Confirm RED
 
-> **이 Phase는 테스트를 실행하고 실패를 확인하는 것만 한다. 구현 코드 없음.**
+> **This Phase only runs tests and confirms failure. No implementation code.**
 
-### Step 1. 테스트 실행
+### Step 1. Run tests
 
 ```bash
 npx playwright test e2e/<task>.spec.ts
 ```
 
-### Step 2. RED 확인
+### Step 2. Confirm RED
 
-모든 테스트가 실패해야 한다. 예상치 않게 통과하는 테스트가 있으면 조사한다.
+All tests must fail. Investigate any that pass unexpectedly.
 
-- [ ] `npx playwright test e2e/<task>.spec.ts` 실행 완료
-- [ ] 모든 테스트 FAIL (RED 확인)
-- [ ] 환경 문제로 테스트 실행 불가 시, 환경을 먼저 수정
+- [ ] `npx playwright test e2e/<task>.spec.ts` executed
+- [ ] All tests FAIL (RED confirmed)
+- [ ] If tests can't run due to environment issues, fix the environment first
 
-### >>> STOP — User에게 제시하고 대기 <<<
+### >>> STOP — Present to user and wait <<<
 
-> "Phase 3 완료. N개 테스트 전부 RED (예상대로 실패). 구현을 시작할까요?"
+> "Phase 3 complete. All N tests RED (failed as expected). Shall I start implementation?"
 
 <HARD-GATE>
-User가 확인하기 전까지 구현 코드를 작성하지 않는다. Phase 4와 합치지 않는다.
+Do not write implementation code until user confirms. Do not combine with Phase 4.
 </HARD-GATE>
 
 ---
 
 ## Phase 4 — Implement to GREEN
 
-> **이제 구현 코드를 작성해도 된다.** Phase 3 RED 확인 후에만.
+> **Now implementation code is allowed.** Only after Phase 3 RED is confirmed.
 
-### Step 1. 구현
+### Step 1. Implement
 
-컴포넌트/페이지/플로우를 구현한다. 의미 있는 변경마다 테스트를 실행한다.
+Build the component/page/flow. Run tests after each meaningful change.
 
 ```bash
 npx playwright test e2e/<task>.spec.ts
@@ -188,35 +189,35 @@ npx playwright test e2e/<task>.spec.ts
 ### Step 2. Progress tracking — stall counter
 
 ```
-테스트 실행 후:
-  통과 테스트 수가 증가했는가?
-    ├── Yes → 계속 (progress)
+After each test run:
+  Did the number of passing tests increase?
+    ├── Yes → continue (progress)
     └── No  → stall counter +1
 
-Stall counter가 3에 도달 → 중단하고 user에게 escalate:
-  "N/M 테스트 통과 중. 막힌 테스트: [실패 테스트명]. 가이드가 필요합니다."
+Stall counter reaches 3 → stop and escalate to user:
+  "N/M tests passing. Stuck on: [failing test names]. Need guidance."
 ```
 
-### Step 3. GREEN 확인
+### Step 3. Confirm GREEN
 
-- [ ] `npx playwright test e2e/<task>.spec.ts` 실행 완료
-- [ ] 모든 테스트 PASS (GREEN 확인 — 0 failures)
-- [ ] 실패하는 테스트가 있으면 구현을 먼저 수정
+- [ ] `npx playwright test e2e/<task>.spec.ts` executed
+- [ ] All tests PASS (GREEN confirmed — 0 failures)
+- [ ] If any tests fail, fix the implementation first
 
-### >>> STOP — GREEN 리포트 <<<
+### >>> STOP — GREEN report <<<
 
-> "Phase 4 완료 — Interaction TDD 종료. N개 테스트 전부 GREEN."
+> "Phase 4 complete — Interaction TDD finished. All N tests GREEN."
 
 ## Gotchas
 
-- **Preview ≠ Production.** 마크업 복제는 visual TDD가 사본을 검증하게 만든다.
-  [references/preview-guide.md](references/preview-guide.md) 참조.
-- **Stall counter = 3.** 통과 테스트 수가 3회 연속 증가하지 않으면 중단하고 escalate.
+- **Preview ≠ Production.** Copying markup makes visual TDD verify a copy, not the real code.
+  See [references/preview-guide.md](references/preview-guide.md).
+- **Stall counter = 3.** If passing test count doesn't increase for 3 consecutive runs, stop and escalate.
 
 ## Checklist
 
-- [ ] Prerequisites 확인 (playwright.config.ts, e2e/, preview route)
-- [ ] API 모킹 전략 결정 (MSW / page.route / none)
-- [ ] 모든 테스트 작성 — **STOP, user 확인 대기**
-- [ ] 테스트 실행, 전부 RED 확인 — **STOP, user 확인 대기**
-- [ ] 구현 완료, 전부 GREEN 확인 — **STOP, user에게 리포트**
+- [ ] Prerequisites verified (playwright.config.ts, e2e/, preview route)
+- [ ] API mocking strategy decided (MSW / page.route / none)
+- [ ] All tests written — **STOP, wait for user confirmation**
+- [ ] Tests run, all RED confirmed — **STOP, wait for user confirmation**
+- [ ] Implementation complete, all GREEN confirmed — **STOP, report to user**
