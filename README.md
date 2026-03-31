@@ -1,6 +1,6 @@
 # fe-harness
 
-A [Claude Code skill](https://agentskills.io) for frontend development with
+A [Claude Code skill](https://agentskills.io) suite for frontend development with
 two feedback loops: **Interaction TDD** (Playwright tests) then
 **Visual Verification** (Figma comparison).
 
@@ -29,41 +29,58 @@ cd skills/fe-harness/scripts
 npm run setup
 ```
 
-## What it does
+## Skill Suite
 
-### Two feedback loops
+fe-harness is split into 4 independent skills that can be triggered individually
+or orchestrated together.
+
+| Skill | Role | Trigger Examples |
+|-------|------|------------------|
+| **fe-spec** | Context collection + spec generation + classification | "Create a spec for this design", "Analyze this component" |
+| **fe-interaction-tdd** | Playwright e2e tests → RED → GREEN | "Add e2e tests to this page", "Write tests for this component" |
+| **fe-visual-tdd** | Screenshot capture → Figma comparison → baseline | "Capture visual baseline", "Compare screenshots with Figma" |
+| **fe-harness** | Orchestrator (full flow) | "Implement this Figma design", "Build this component" |
+
+### Full Flow (fe-harness orchestrator)
 
 ```
-Workflow A — Interaction TDD
-  PHASE 0  Gather Figma design + generate interaction spec
-    ↓ [user confirms spec]
-  PHASE 1  Classify complexity (style-only / interactive / ambiguous)
-    ↓ [user confirms classification]
-  PHASE 2  Write Playwright tests (test code only)
-    ↓ [user confirms tests]
-  PHASE 3  Run tests, confirm RED
-    ↓ [user confirms RED]
-  PHASE 4  Implement to GREEN
-    ↓ [user confirms GREEN]
-
-Workflow B — Visual TDD
-  PHASE 5  Download expected images from Figma REST API
-    ↓ [user confirms capture targets]
-  PHASE 6  Visual verification — capture screenshot → compare with Figma → iterate
-    ↓ [user confirms visual match]
-  PHASE 7  Save baseline + accumulate harness artifacts in project
+fe-spec                     Context & Spec & Classification
+  ↓ [user confirms spec]
+  ↓ [user confirms classification]
+  ↓
+  ├── style-only ──────────→ fe-visual-tdd
+  │                            ↓
+  └── interactive ──────────→ fe-interaction-tdd → fe-visual-tdd
+                                                      ↓
+                              Completion Report ←─────┘
+                                ↓
+                              superpowers verification-before-completion
+                                ↓
+                              superpowers finishing-a-development-branch
 ```
 
-### Adaptive complexity
+### Independent Usage
 
-| Complexity | Path |
-|------------|------|
-| **style-only** | Skip interaction TDD → visual verification only |
-| **interactive** | Full TDD loop → visual verification |
-| **ambiguous** | Ask human before proceeding |
+Each skill works standalone:
 
-### Key features
+- **fe-spec only** — Generate a spec from Figma or existing code without building anything
+- **fe-interaction-tdd only** — Add e2e tests to existing code (analyzes code → generates spec → writes tests → RED → GREEN)
+- **fe-visual-tdd only** — Capture visual baselines without Figma (baseline mode) or compare against Figma
 
+### superpowers Integration
+
+fe-harness is designed to work alongside [superpowers](https://github.com/obra/superpowers).
+For frontend UI work, fe-harness skills replace superpowers' `test-driven-development` skill.
+Add this to your project's `CLAUDE.md` to enable routing:
+
+```markdown
+For frontend UI work (component/page implementation, style changes, Figma design
+implementation), use fe-harness skills instead of superpowers test-driven-development.
+```
+
+## Key Features
+
+- **Dual input mode** — start from a Figma URL or from existing code
 - **AI spec generation** — synthesizes Figma design + task description into interaction specs, asks human when unclear
 - **Interaction TDD** — Playwright tests written before implementation, real RED/GREEN gate
 - **Visual verification** — Claude compares Figma screenshot vs browser rendering (not pixel diff)
@@ -71,6 +88,7 @@ Workflow B — Visual TDD
 - **API mocking** — detects MSW or falls back to `page.route()`; `--mock-routes` for capture.ts
 - **Harness accumulation** — tests, preview routes, and baselines stay in the project as permanent infrastructure
 - **Stall detection** — stops and escalates to human when progress stalls (3 consecutive non-improvements)
+- **STOP gates** — each phase requires explicit user confirmation before proceeding
 
 ## Scripts
 
@@ -81,6 +99,20 @@ Workflow B — Visual TDD
 | `figma-export.ts` | Download Figma frame images via REST API |
 
 All scripts support `--help` for usage details.
+
+## Evals
+
+Each skill has behavioral tests that verify STOP gates, phase separation, and rule enforcement:
+
+```bash
+# Run all skills' tests
+cd skills/fe-harness/evals
+bash run-all.sh
+
+# Run a single skill's tests
+cd skills/fe-spec/evals
+bash run-all.sh
+```
 
 ## Requirements
 
