@@ -63,7 +63,7 @@ digraph fe_visual_tdd {
 ## Setup
 
 ```bash
-npm install -D playwright pixelmatch pngjs tsx
+npm install -D playwright pixelmatch pngjs tsx odiff-bin
 npx playwright install chromium --with-deps
 ```
 
@@ -238,6 +238,12 @@ npx tsx scripts/capture.ts \
   `diff.ts` is for browser vs browser regression only.
 - **Figma nodeId format.** URL `node-id=123-456` → API `123:456` (dash → colon).
 - **Stall counter = 3.** 3 consecutive iterations with no progress → stop and escalate.
+- **Deterministic mode** is on by default in `capture.ts` (`--deterministic true`).
+  It freezes `Date.now()`, seeds `Math.random()`, disables CSS animations, and makes `requestAnimationFrame` synchronous.
+  Disable with `--deterministic false` if the page relies on real timing.
+- **Stability wait** is on by default (`--stability-wait true`).
+  It waits for font loading, DOM settle (300ms), animation completion, and network idle before each screenshot.
+  Disable with `--stability-wait false` if you handle wait logic yourself.
 
 ## CI Integration
 
