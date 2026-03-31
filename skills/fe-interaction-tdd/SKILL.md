@@ -204,9 +204,25 @@ Stall counter reaches 3 → stop and escalate to user:
 - [ ] All tests PASS (GREEN confirmed — 0 failures)
 - [ ] If any tests fail, fix the implementation first
 
+### Step 4. Run Selector Stability Report
+
+After all tests are GREEN, analyze the test file for selector quality:
+
+```bash
+npx tsx scripts/selector-report.ts --file e2e/<task>.spec.ts
+```
+
+This produces a report classifying each selector:
+- ✅ **Stable**: `data-testid`, `getByRole`, `getByLabel`, `getByTestId`
+- ⚠️ **Caution**: `input[name]`, `button:has-text()` — semantic but fragile
+- ❌ **Warning**: CSS paths, `nth-child`, class-based — suggest `data-testid`
+
+The report is informational — review and address warnings if practical.
+
 ### >>> STOP — GREEN report <<<
 
-> "Phase 4 complete — Interaction TDD finished. All N tests GREEN."
+> "Phase 4 complete — Interaction TDD finished. All N tests GREEN.
+> Selector stability score: X% (N/M stable selectors)."
 
 ## Gotchas
 
@@ -220,4 +236,5 @@ Stall counter reaches 3 → stop and escalate to user:
 - [ ] API mocking strategy decided (MSW / page.route / none)
 - [ ] All tests written — **STOP, wait for user confirmation**
 - [ ] Tests run, all RED confirmed — **STOP, wait for user confirmation**
-- [ ] Implementation complete, all GREEN confirmed — **STOP, report to user**
+- [ ] Implementation complete, all GREEN confirmed
+- [ ] Selector stability report reviewed — **STOP, report to user**
