@@ -1,0 +1,9 @@
+{
+  "name": "fe-harness",
+  "description": "Frontend development skill suite with two feedback loops — Playwright-based Interaction TDD and Figma-based Visual Verification. Bundles fe-spec, fe-interaction-tdd, fe-visual-tdd, and the orchestrating fe-harness skills.",
+  "version": "0.1.0",
+  "author": {
+    "name": "ludacirs",
+    "url": "https://github.com/ludacirs"
+  }
+}
