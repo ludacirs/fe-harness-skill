@@ -59,6 +59,8 @@ digraph fe_visual_tdd {
 | "Close enough, let it pass" | If Claude visual comparison finds differences, fix them. |
 | "Figma MCP screenshot would be easier to compare" | MCP inline images cannot be saved to files. Use the REST API. |
 | "diff.ts can compare Figma against browser" | Figma vs browser pixel comparison is unreliable. Use Claude vision. |
+| "PASS is enough, the user can open the images" | Fill every slot of the Step 3 verdict block. The block is the deliverable. |
+| "It looks a few px off, I'll tweak the CSS and re-capture" | Measure first (`getBoundingClientRect` vs design spec). Iterate only on a measured `layout difference`. |
 
 ## Setup
 
@@ -167,9 +169,29 @@ Present two **local** images to Claude:
 
 Claude evaluates: layout, spacing, colors, typography, overall fidelity.
 
+**Record the verdict in this shape — every slot filled.** The user reviews this block instead of re-opening the images.
+
+```
+VT-<n>: <label> — PASS | FAIL
+  expected: visual-qa/expected/<target-name>.png
+  actual:   visual-qa/actual/<target-name>.png
+  observed differences:
+    1. <where> — <what> → rendering noise (anti-aliasing | font fallback | sub-pixel | dev overlay) | layout difference
+       evidence: <why — e.g. "Figma text style is SpoqaHanSans, project font is Pretendard (design spec)">
+    2. ...
+  (or: observed differences: none)
+```
+
+Any `layout difference` → FAIL → Step 4. A PASS may carry only `rendering noise` items.
+
+**If a position, size, or spacing difference is suspected but not certain, measure it before judging:**
+- Browser: `page.evaluate(() => document.querySelector('<selector>').getBoundingClientRect())`
+- Figma: the size/spacing value in the design spec (fe-spec collected it via `get_design_context`)
+- Put both numbers in the `evidence` slot. Measured offset ≥ 2px → `layout difference`; 1px → `sub-pixel` rendering noise.
+
 #### Step 4. Iterate
 
-If differences are found:
+If the verdict block records any `layout difference`:
 - Fix CSS/styles
 - Wait for hot reload
 - Re-run Step 2 (this target only)
@@ -190,8 +212,8 @@ See [references/route-verification.md](references/route-verification.md).
 
 When all targets pass visual verification:
 - Each final actual screenshot becomes the **regression baseline**
-- Copy to `visual-qa/expected/<target-name>-baseline.png`
-- Future changes can use `diff.ts` (pixelmatch) to compare against baseline
+- Copy to `__baselines__/<route>/<target-name>.png` (see [references/ci-guide.md](references/ci-guide.md) §Baseline Path Convention)
+- Future changes can use `diff.ts` to compare against baseline
   (browser vs browser comparison is reliable)
 
 ### >>> STOP — Present Visual Test results to user and wait <<<
@@ -199,9 +221,12 @@ When all targets pass visual verification:
 > "Phase 6 complete — Visual Test List N/N verified:
 > ```
 > VT-1: [label] — ✅ PASS
+>   expected: ... / actual: ...
+>   observed differences: <Step 3 verdict block, or none>
 > VT-2: [label] — ✅ PASS
-> ...
+>   ...
 > ```
+> Baselines saved under `__baselines__/<route>/`.
 > Please confirm."
 
 <HARD-GATE>
@@ -221,12 +246,12 @@ When triggered independently without Figma:
 ```bash
 npx tsx scripts/capture.ts \
   --url http://localhost:<PORT>/<route> \
-  --out visual-qa/expected/<name>-baseline.png \
+  --out __baselines__/<route>/<name>.png \
   --type <component|page|flow> \
   --width <W> --height <H>
 ```
 
-> "Baseline capture complete. Saved to `visual-qa/expected/<name>-baseline.png`.
+> "Baseline capture complete. Saved to `__baselines__/<route>/<name>.png`.
 > Future regression checks will compare against this baseline."
 
 ## Gotchas
@@ -256,6 +281,8 @@ See [references/ci-guide.md](references/ci-guide.md) for CI pipeline setup.
 - [ ] Downloads verified — expected image exists for every VT item
 - [ ] Each VT item captured (capture.ts)
 - [ ] Each VT item compared via Claude visual comparison (local files, not MCP)
+- [ ] Each VT item's verdict block recorded — paths, observed differences, evidence
+- [ ] Suspected position/size/spacing differences measured (`getBoundingClientRect` vs design spec), not eyeballed
 - [ ] All VT items ✅ PASS
 - [ ] Actual route vs preview comparison (Step 4-b) — drift check passed — **STOP, wait for user confirmation**
 - [ ] Baseline saved, artifacts committed
