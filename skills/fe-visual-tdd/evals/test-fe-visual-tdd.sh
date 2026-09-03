@@ -61,4 +61,16 @@ output=$(ask "What happens if visual verification makes no progress for 3 consec
 if assert_contains "$output" "escalate\|stop\|human\|user\|ask" "Escalates to human"; then :; else exit 1; fi
 echo ""
 
+# Test 6: Visual verdict must carry evidence (issue #48)
+echo "Test 6: Per-VT verdict includes observed differences and evidence..."
+output=$(ask "After Claude visually compares a VT item's expected and actual images and decides it passes, what exactly must the report to the user contain for that VT item?")
+if assert_contains "$output" "evidence\|Evidence\|observed\|Observed\|classif" "Verdict includes evidence"; then :; else exit 1; fi
+echo ""
+
+# Test 7: Measure instead of eyeballing (issue #48)
+echo "Test 7: Suspected spacing difference is measured, not eyeballed..."
+output=$(ask "During visual comparison, the title looks a few pixels lower than in Figma but I am not sure. What should I do?")
+if assert_contains "$output" "getBoundingClientRect\|get_metadata\|bounding" "Measures geometry"; then :; else exit 1; fi
+echo ""
+
 echo "=== All fe-visual-tdd skill tests passed ==="

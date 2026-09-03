@@ -17,11 +17,12 @@ When all workflows finish, output a structured summary. This is **mandatory** �
 ### Workflow B — Visual TDD
 - **Visual Test List**: N개 항목
 - **Figma 이미지**: `visual-qa/expected/` — N개 다운로드 완료
-- **시각 비교 결과**:
+- **시각 비교 결과** (VT 항목마다 fe-visual-tdd Step 3 판정 블록을 그대로 포함 — PASS 한 줄만 쓰지 않음):
   - VT-1: [label] — PASS (N회 반복)
-  - VT-2: [label] — PASS
-  - ...
-- **베이스라인 저장**: `visual-qa/expected/<task>-baseline.png`
+    - expected: `visual-qa/expected/<name>.png` / actual: `visual-qa/actual/<name>.png`
+    - observed differences: `<위치> — <내용> → rendering noise | layout difference`, evidence: `<근거>` (없으면 none)
+  - VT-2: ...
+- **베이스라인 저장**: `__baselines__/<route>/<step>.png`
 
 ### 생성/수정된 파일
 - `<file1>` — <설명>
