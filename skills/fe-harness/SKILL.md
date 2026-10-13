@@ -100,13 +100,14 @@ Invoke `superpowers:finishing-a-development-branch` via the Skill tool.
 ## Checkpoint Mode
 
 The unit of work is a checkpoint (CP) small enough to review in a few minutes.
-Each CP passes automatic gates, then one user approval commits it.
+Each CP passes automatic gates and a two-reviewer gate, then one user approval commits it.
 
 ```
 fe-spec (checkpoint mode) ─ STOP: spec + plan
   └─ for CP-1 … CP-n, in order:
        G1  tests → RED       (automatic, RED evidence block)
        G2  implement → GREEN (automatic, GREEN evidence block)
+       G4  reviewers A + B   (fix → back to G2; max 2 rounds)
        G5  STOP: checkpoint report → approve → commit
   → fe-visual-tdd (all VT items) → completion report → verification → finishing
 ```
@@ -129,12 +130,25 @@ a GREEN evidence block, without stopping in between.
 **Evidence condition fails** (RED cannot be shown, stall counter hits 3, an earlier CP's test
 breaks) → stop the loop and hand it to the user with the evidence block.
 
+**G4 — Review gate (every CP).** Two independent reviewers read the CP diff, prompts in
+[references/review-gate.md](references/review-gate.md):
+
+- **Reviewer A — spec fidelity:** missing states, implementation that only satisfies the tests
+  (hardcoding, test-only branches), missing accessible names.
+- **Reviewer B — maintainability:** missed reuse, needless abstraction, unstable selectors,
+  comments that restate code.
+
+Close every finding as `fixed` or `rejected — <reason citing spec, plan, or a repo file>`.
+Any fix → back to G2 for new GREEN evidence, then a new review round.
+**At most 2 review rounds per CP.** Open findings after round 2 → STOP and hand to the user.
+
 **G5 — STOP: checkpoint report.** Present it in this shape and wait:
 
 ```markdown
 ## CP-3 — Wire sections into page, expand
 - diff: 3 files, +118 −12
 - RED → GREEN: IT-3, IT-4 (evidence blocks below), earlier CP tests 4/4 passing
+- review: A 2 (fixed 1, rejected 1 — <reason>), B 1 (fixed 1), rounds 2
 - state fixtures: profile.diagnosisDone, report.toefl.basic
 - next: CP-4 Empty and error states
 <RED evidence block>
@@ -159,7 +173,8 @@ of the classic flow. The completion report adds one line per CP (title, commit, 
 3. **Checkpoint mode: sub-skill phase STOPs become evidence blocks.** User STOPs are the plan
    approval and G5 for every CP. A CP is never committed without its G5 approval.
 4. **Checkpoint mode: one CP at a time.** CP-n+1 starts only after CP-n is committed.
-5. **Follow the exact path for the classification result.** Never skip fe-interaction-tdd when classification is interactive.
+5. **Checkpoint mode: every review finding reaches G5** as fixed or rejected with a cited reason.
+6. **Follow the exact path for the classification result.** Never skip fe-interaction-tdd when classification is interactive.
 
 ### Rationalization Table — If you think this, STOP
 
@@ -171,6 +186,8 @@ of the classic flow. The completion report adds one line per CP (title, commit, 
 | "Verification isn't really necessary" | superpowers verification checks overall project health. Always run it. |
 | "GREEN and build pass, commit and keep going" | Checkpoint mode: commit only after G5 approval. |
 | "Two CPs are small, approve them together" | One G5 per CP. |
+| "This finding is nitpicking, skip it" | Fix it or reject it with a cited reason. It appears in G5 either way. |
+| "One more review round will clear it" | Round 2 is the last. Hand open findings to the user. |
 
 ## Checklist
 
@@ -187,6 +204,6 @@ Classic mode:
 Checkpoint mode:
 
 - [ ] Invoke fe-spec in checkpoint mode → spec + plan approved
-- [ ] Per CP: RED evidence → GREEN evidence → G5 report — **STOP, wait for approval** → commit
+- [ ] Per CP: RED evidence → GREEN evidence → review gate (≤2 rounds) → G5 report — **STOP, wait for approval** → commit
 - [ ] Invoke fe-visual-tdd → all VT items
 - [ ] Completion report (with per-CP lines) → verification → finishing
