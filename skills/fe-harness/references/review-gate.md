@@ -6,7 +6,7 @@ Two reviewers read one checkpoint's diff from different angles. Neither sees the
 
 - The CP diff: `git diff <last CP commit or branch base>` plus untracked files of this CP
 - The spec items and the CP row from the checkpoint plan
-- The RED and GREEN evidence blocks
+- The RED and GREEN evidence blocks, and VT verdict blocks if the CP has VT items
 
 ## Reviewer A — spec fidelity
 
@@ -70,5 +70,5 @@ B-2 rejected — <reason that cites the spec, the CP plan, or a repository file>
 A rejection reason that cites nothing ("seems fine", "not important") is invalid; fix the finding instead.
 "Belongs to CP-n" is valid when the plan assigns it to that later CP.
 
-After any `fixed` → G2 again (GREEN evidence), then a new review round.
+After any `fixed` → G2 again (GREEN evidence, and G3 if the CP has VT items), then a new review round.
 Open findings after round 2 → STOP and hand the CP to the user with the findings.

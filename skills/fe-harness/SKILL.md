@@ -107,9 +107,10 @@ fe-spec (checkpoint mode) ─ STOP: spec + plan
   └─ for CP-1 … CP-n, in order:
        G1  tests → RED       (automatic, RED evidence block)
        G2  implement → GREEN (automatic, GREEN evidence block)
+       G3  fe-visual-tdd on this CP's VT items (only if it has any; verdict blocks)
        G4  reviewers A + B   (fix → back to G2; max 2 rounds)
        G5  STOP: checkpoint report → approve → commit
-  → fe-visual-tdd (all VT items) → completion report → verification → finishing
+  → completion report → verification → finishing
 ```
 
 User STOPs: plan approval once + G5 once per CP. Nothing else asks the user unless an
@@ -125,7 +126,11 @@ Invoke `fe-spec` in checkpoint mode. Its one STOP approves the spec and the chec
 CP id, classification, test items, and state fixtures. It returns a RED evidence block, then
 a GREEN evidence block, without stopping in between.
 
-**G2 (style-only CPs).** Implement only. No RED/GREEN; the CP's VT items are verified in Step C3.
+**G2 (style-only CPs).** Implement only. G3 is this CP's pass/fail signal.
+
+**G3 — Visual (CPs with VT items).** Invoke `fe-visual-tdd` in checkpoint mode with the CP's
+VT items, fileKey, viewport, and state fixtures. Every VT item must return PASS with its
+verdict block. CPs without VT items skip G3.
 
 **Evidence condition fails** (RED cannot be shown, stall counter hits 3, an earlier CP's test
 breaks) → stop the loop and hand it to the user with the evidence block.
@@ -139,7 +144,7 @@ breaks) → stop the loop and hand it to the user with the evidence block.
   comments that restate code.
 
 Close every finding as `fixed` or `rejected — <reason citing spec, plan, or a repo file>`.
-Any fix → back to G2 for new GREEN evidence, then a new review round.
+Any fix → back to G2 for new GREEN evidence (and G3 if the CP has VT items), then a new review round.
 **At most 2 review rounds per CP.** Open findings after round 2 → STOP and hand to the user.
 
 **G5 — STOP: checkpoint report.** Present it in this shape and wait:
@@ -148,11 +153,13 @@ Any fix → back to G2 for new GREEN evidence, then a new review round.
 ## CP-3 — Wire sections into page, expand
 - diff: 3 files, +118 −12
 - RED → GREEN: IT-3, IT-4 (evidence blocks below), earlier CP tests 4/4 passing
+- visual: VT-2 PASS (verdict block below)
 - review: A 2 (fixed 1, rejected 1 — <reason>), B 1 (fixed 1), rounds 2
 - state fixtures: profile.diagnosisDone, report.toefl.basic
 - next: CP-4 Empty and error states
 <RED evidence block>
 <GREEN evidence block>
+<VT verdict blocks>
 ```
 
 | User answer | Action |
@@ -163,8 +170,7 @@ Any fix → back to G2 for new GREEN evidence, then a new review round.
 
 ### Step C3. Finish
 
-After the last CP: Step 3 (fe-visual-tdd for all VT items) → Step 4 → Step 5 → Step 6
-of the classic flow. The completion report adds one line per CP (title, commit, items).
+After the last CP: Step 4 → Step 5 → Step 6 of the classic flow. The completion report adds one line per CP (title, commit, items).
 
 ## ABSOLUTE RULES
 
@@ -204,6 +210,5 @@ Classic mode:
 Checkpoint mode:
 
 - [ ] Invoke fe-spec in checkpoint mode → spec + plan approved
-- [ ] Per CP: RED evidence → GREEN evidence → review gate (≤2 rounds) → G5 report — **STOP, wait for approval** → commit
-- [ ] Invoke fe-visual-tdd → all VT items
+- [ ] Per CP: RED evidence → GREEN evidence → visual verdicts (if VT items) → review gate (≤2 rounds) → G5 report — **STOP, wait for approval** → commit
 - [ ] Completion report (with per-CP lines) → verification → finishing
