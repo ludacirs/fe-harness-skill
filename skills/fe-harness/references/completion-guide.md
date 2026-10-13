@@ -33,6 +33,10 @@ When all workflows finish, output a structured summary. This is **mandatory** �
 - CP-1: <목표> — <분류> — 커밋 `<sha>` — IT-1, IT-2 / 수정 요청 <N>회
 - CP-2: ...
 
+### 레슨 (checkpoint 모드에서만)
+- 이번 작업에서 추가: <N>개, 횟수 증가: <N>개
+- CLAUDE.md 이전 제안 (×3 이상): `<규칙>` (×<n>) — 사용자가 결정. 직접 옮기지 않음
+
 ### 이슈 및 참고사항
 - <특이사항, 스킵한 항목, 수동 확인 필요 사항 등. 없으면 "없음">
 ```
@@ -49,6 +53,7 @@ When all workflows finish, output a structured summary. This is **mandatory** �
 ```
 e2e/<task>.spec.ts              <- interaction tests (cumulative)
 e2e/fixtures/states/            <- named API state fixtures (reusable)
+.fe-harness/lessons.md          <- review feedback rules (checkpoint mode, commit)
 dev/preview/<Component>.tsx     <- preview routes (cumulative)
 __baselines__/{route}/{step}.png <- structured baseline screenshots (commit)
 visual-qa/config.json           <- per-task thresholds (commit)

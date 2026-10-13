@@ -168,9 +168,28 @@ Any fix → back to G2 for new GREEN evidence (and G3 if the CP has VT items), t
 | Request changes | Take the reason, redo from G2, present G5 again |
 | Revise plan | Re-plan the remaining CPs with fe-spec, then continue |
 
+### Lessons — `.fe-harness/lessons.md`
+
+Review feedback accumulates in the project so later CPs and later tasks avoid it. One line per rule:
+
+```
+- (×2) Empty states use `EmptyState` from `@/components/ui`, not custom markup — CP-4 G5, 2026-10-13
+```
+
+| Source | Record |
+|--------|--------|
+| G4 finding closed as `fixed` whose rule applies beyond this diff | Yes |
+| G4 finding closed as `rejected` | No |
+| G5 "Request changes" reason | Always |
+
+A rule already in the file (same meaning) → raise its count `(×n)` and update the source. Never a second line.
+Readers: fe-spec when planning, fe-interaction-tdd before G2, both reviewers in G4.
+
 ### Step C3. Finish
 
-After the last CP: Step 4 → Step 5 → Step 6 of the classic flow. The completion report adds one line per CP (title, commit, items).
+After the last CP: Step 4 → Step 5 → Step 6 of the classic flow.
+The completion report lists lessons at `(×3)` or more as suggestions for the repository's CLAUDE.md.
+Never edit CLAUDE.md or other repository rule files yourself. The completion report adds one line per CP (title, commit, items).
 
 ## ABSOLUTE RULES
 
@@ -194,6 +213,7 @@ After the last CP: Step 4 → Step 5 → Step 6 of the classic flow. The complet
 | "Two CPs are small, approve them together" | One G5 per CP. |
 | "This finding is nitpicking, skip it" | Fix it or reject it with a cited reason. It appears in G5 either way. |
 | "One more review round will clear it" | Round 2 is the last. Hand open findings to the user. |
+| "This lesson is obviously repo-wide, put it in CLAUDE.md" | Suggest it in the completion report. The user decides. |
 
 ## Checklist
 
@@ -211,4 +231,5 @@ Checkpoint mode:
 
 - [ ] Invoke fe-spec in checkpoint mode → spec + plan approved
 - [ ] Per CP: RED evidence → GREEN evidence → visual verdicts (if VT items) → review gate (≤2 rounds) → G5 report — **STOP, wait for approval** → commit
+- [ ] Fixed generalizable findings and every G5 change reason recorded in `.fe-harness/lessons.md`
 - [ ] Completion report (with per-CP lines) → verification → finishing

@@ -119,4 +119,24 @@ output=$(ask "In checkpoint mode, a task has 4 checkpoints; only CP-2 and CP-3 h
 if assert_contains "$(first_line "$output")" "^2\\|^\\*\\*2\\|^Two\\|^\\*\\*Two" "Once per CP with VT items"; then :; else exit 1; fi
 echo ""
 
+# Test 14: G5 change requests are recorded as lessons
+echo "Test 14: A G5 change request is recorded in the lessons file..."
+output=$(ask "In checkpoint mode, at G5 the user requests changes: 'use the shared EmptyState component, not a custom div'. Besides redoing the checkpoint from G2, which file do you update? Give the path.")
+if assert_contains "$output" ".fe-harness/lessons.md" "Updates .fe-harness/lessons.md"; then :; else exit 1; fi
+echo ""
+
+# Test 15: Repeated lessons are counted, not duplicated
+echo "Test 15: A repeated lesson increments its count instead of adding a line..."
+output=$(ask "In checkpoint mode, a fixed review finding matches a rule already in the lessons file. Do you add a new line for it? Start with Yes or No, then say what you do.")
+if assert_contains "$(first_line "$output")" "^No\\|^\\*\\*No" "No duplicate line"; then :; else exit 1; fi
+if assert_contains "$output" "count\|Count" "Increments the count"; then :; else exit 1; fi
+echo ""
+
+# Test 16: Lessons are never moved into CLAUDE.md directly
+echo "Test 16: Lessons are suggested for CLAUDE.md, never moved directly..."
+output=$(ask "In checkpoint mode, a lesson has been recorded 4 times. May you add it to the repository's CLAUDE.md yourself? Start with Yes or No, then say what you do.")
+if assert_contains "$(first_line "$output")" "^No\\|^\\*\\*No" "Does not edit CLAUDE.md"; then :; else exit 1; fi
+if assert_contains "$output" "completion report\|suggest\|propos" "Suggests in completion report"; then :; else exit 1; fi
+echo ""
+
 echo "=== All fe-harness orchestrator skill tests passed ==="

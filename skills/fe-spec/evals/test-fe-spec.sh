@@ -93,4 +93,10 @@ if assert_contains "$(first_line "$output")" "^No\|^\*\*No" "Rejected"; then :; 
 if assert_contains "$output" "split\|Split\|divide\|smaller" "Must be split"; then :; else exit 1; fi
 echo ""
 
+# Test 10: Checkpoint planning reads lessons
+echo "Test 10: Checkpoint mode reads the lessons file before planning..."
+output=$(ask "In checkpoint mode, list every file or directory you read before building the checkpoint plan.")
+if assert_contains "$output" "lessons" "Reads lessons"; then :; else exit 1; fi
+echo ""
+
 echo "=== All fe-spec skill tests passed ==="
