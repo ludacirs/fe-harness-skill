@@ -4,7 +4,8 @@ description: >
   Frontend UI design context collection and interaction spec generation.
   Collects design context from a Figma URL via Figma MCP, or analyzes
   existing code to generate a spec. Classifies complexity as style-only
-  or interactive. Activate on "create a spec for this design",
+  or interactive. In checkpoint mode, plans the work as ordered checkpoints.
+  Activate on "create a spec for this design",
   "analyze this component", "spec this page".
 license: MIT
 allowed-tools: Read Glob Grep
@@ -28,22 +29,36 @@ digraph fe_spec {
   confirm_spec [label="STOP\nuser confirms spec" style=bold];
   classify [label="Complexity Classification\nstyle-only / interactive"];
   confirm_class [label="STOP\nuser confirms classification" style=bold];
+  plan [label="Checkpoint Plan\nlogic / style-only / interactive per CP"];
+  confirm_plan [label="STOP\nuser approves spec + plan" style=bold];
+  mode [label="Mode" shape=diamond];
 
   input -> figma [label="Figma URL"];
   input -> code [label="Code path"];
   figma -> spec;
   code -> spec;
   spec -> clarify;
-  clarify -> confirm_spec;
+  clarify -> mode;
+  mode -> confirm_spec [label="classic"];
   confirm_spec -> classify;
   classify -> confirm_class;
+  mode -> plan [label="checkpoint"];
+  plan -> confirm_plan;
 }
 ```
 
+## Modes
+
+| Mode | When | User STOPs |
+|------|------|------------|
+| **classic** (default) | Checkpoint mode not requested | 2 — spec, then classification |
+| **checkpoint** | fe-harness or the user requests checkpoint mode | 1 — spec and checkpoint plan together |
+
 ## ABSOLUTE RULES
 
-1. **Do not proceed past spec confirmation.** Do not start classification until the user confirms the spec.
-2. **Do not write any code before classification is confirmed.** No test code, no implementation code — nothing until the user confirms the classification.
+1. **Classic mode:** do not start classification until the user confirms the spec.
+2. **Checkpoint mode:** present the spec and the checkpoint plan in one STOP. Do not proceed until the user approves both.
+3. **Do not write any code before the mode's last STOP is confirmed.** No test code, no implementation code.
 
 ## Input Modes
 
@@ -102,7 +117,9 @@ Ask the user when:
 
 ### Common — Step 4. User confirms spec
 
-Present the generated spec. The user confirms or requests revisions.
+Checkpoint mode: skip this STOP and go to [Phase 1 — Checkpoint Plan](#phase-1--checkpoint-plan-checkpoint-mode).
+
+Classic mode: present the generated spec. The user confirms or requests revisions.
 
 ### >>> STOP — Present spec and wait <<<
 
@@ -114,7 +131,7 @@ Do not proceed to Phase 1 until the user confirms the spec.
 
 ---
 
-## Phase 1 — Complexity Classification
+## Phase 1 — Complexity Classification (classic mode)
 
 Classify **before** any implementation.
 
@@ -144,12 +161,53 @@ Classify **before** any implementation.
 Do not write any code until the user confirms the classification.
 </HARD-GATE>
 
+---
+
+## Phase 1 — Checkpoint Plan (checkpoint mode)
+
+Split the spec into checkpoints (CP-1 … CP-n), each reviewable in a few minutes.
+Fill the Checkpoint Plan table in [references/spec-template.md](references/spec-template.md).
+
+### Step 1. Read the state fixture catalog
+
+List `e2e/fixtures/states/`. Fill each CP's state column with existing names;
+mark states that do not exist yet as `(new)`.
+
+### Step 2. Classify each checkpoint
+
+| Classification | Criteria | RED/GREEN signal |
+|----------------|----------|------------------|
+| **logic** | No rendering: pure functions, data conversion, validation, UI-less hooks. Project has jest or vitest in package.json | Unit tests |
+| **style-only** | Static markup and styles. No new interactions | Visual comparison (VT items) |
+| **interactive** | Interactions, state changes, wiring into pages. Also pure logic when package.json has neither jest nor vitest | Playwright tests tagged `@CP-n` |
+
+### Step 3. Apply the split rules
+
+- Each CP has **at most 5 test items** and an expected diff of about 150 lines or less. Larger → split it.
+- Order: logic → static UI → wiring and interactions → empty/error states.
+- After each CP, the build and every earlier CP's tests still pass.
+- Every IT and VT item from the spec belongs to exactly one CP.
+
+| If you think… | What you must do |
+|----------------|-----------------|
+| "These 7 items are closely related, keep them in one CP" | Split. The limit is 5. |
+| "Fewer, bigger CPs mean fewer approvals" | Small CPs are the point. Each approval reviews a small diff. |
+
+### >>> STOP — Present spec and checkpoint plan, wait <<<
+
+> "Spec and checkpoint plan ready: [spec] [plan table]. Please approve or request changes."
+
+<HARD-GATE>
+Do not write any code until the user approves the spec and the plan.
+</HARD-GATE>
+
 ## Output
 
 This skill produces:
 1. **Interaction spec** — structured spec document
-2. **Classification** — `style-only` or `interactive`
-3. **Saved metadata** — fileKey, nodeId, viewport dimensions (Figma mode only)
+2. **Classification** — `style-only` or `interactive` (classic mode)
+3. **Checkpoint plan** — CP table with per-CP classification (checkpoint mode)
+4. **Saved metadata** — fileKey, nodeId, viewport dimensions (Figma mode only)
 
 The next skill (fe-interaction-tdd or fe-visual-tdd) receives this output as input.
 
@@ -157,5 +215,11 @@ The next skill (fe-interaction-tdd or fe-visual-tdd) receives this output as inp
 
 - [ ] Design context collected (Figma MCP or code analysis)
 - [ ] fileKey, nodeId, viewport dimensions saved (Figma mode)
-- [ ] Interaction spec generated — **STOP, wait for user confirmation**
-- [ ] Complexity classified (style-only / interactive / ambiguous → ask) — **STOP, wait for user confirmation**
+- [ ] Interaction spec generated
+- Classic mode:
+  - [ ] Spec — **STOP, wait for user confirmation**
+  - [ ] Complexity classified (style-only / interactive / ambiguous → ask) — **STOP, wait for user confirmation**
+- Checkpoint mode:
+  - [ ] `e2e/fixtures/states/` listed
+  - [ ] Checkpoint plan built (≤5 test items per CP, ordered, every IT/VT assigned)
+  - [ ] Spec + plan — **STOP, wait for user approval**
