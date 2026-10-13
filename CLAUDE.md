@@ -33,6 +33,9 @@ test-driven-development for TDD.
 ## Key Invariants
 
 - Each skill's STOP gates must be respected — never bypass user confirmation.
-- RED must be confirmed before any implementation code is written.
+- Checkpoint mode: sub-skill phase STOPs become evidence blocks; user STOPs are the plan
+  approval and one G5 per checkpoint. No checkpoint is committed without G5.
+  An unmet evidence condition stops the loop.
+- RED must be confirmed before any implementation code is written (per checkpoint in checkpoint mode).
 - Figma MCP is for design spec only — image downloads use REST API (figma-export.ts).
 - diff.ts is browser-vs-browser only — never for Figma-vs-browser comparison.

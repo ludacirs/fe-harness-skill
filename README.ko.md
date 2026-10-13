@@ -88,6 +88,7 @@ implementation), use fe-harness skills instead of superpowers test-driven-develo
 - **하네스 축적** — 테스트, preview 라우트, baseline이 프로젝트에 영구 인프라로 남음
 - **정체 감지** — 진전이 없으면 (3회 연속 미개선) 중단하고 사용자에게 에스컬레이션
 - **STOP 게이트** — 각 Phase마다 사용자의 명시적 확인이 필요
+- **체크포인트 모드** — 작업을 작은 체크포인트로 나누고, 각각 증거 블록과 함께 RED → GREEN을 자동으로 통과한 뒤 사용자 승인 한 번으로 커밋
 
 ## 스크립트
 

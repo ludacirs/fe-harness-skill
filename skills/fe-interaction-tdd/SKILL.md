@@ -53,9 +53,12 @@ digraph fe_interaction_tdd {
      **test infrastructure** (`/dev/preview` wrappers).
    - If you created `.tsx`, `.vue`, `.svelte`, or style files before Phase 3,
      that is a rule violation. Delete them immediately.
+   - Checkpoint mode also allows empty stubs before RED (see [Checkpoint Mode](#checkpoint-mode)).
 
-2. **Each Phase ends with STOP.** Present results to the user and
+2. **Classic mode: each Phase ends with STOP.** Present results to the user and
    get explicit confirmation before moving to the next Phase.
+   **Checkpoint mode: Phase STOPs become evidence blocks** returned to fe-harness.
+   An unmet evidence condition is a STOP.
 
 3. **One Phase = one task.** Do not combine work from multiple Phases.
    Phase 2 is test writing. Phase 3 is running. Phase 4 is implementation.
@@ -89,6 +92,63 @@ npx playwright install chromium --with-deps
 | **No spec** | File path or component name (independent trigger) | Analyze code → self-generate spec → write tests |
 
 The same STOP gates apply even when triggered independently.
+
+---
+
+## Checkpoint Mode
+
+Used when fe-harness runs a checkpoint (CP). Input: CP id, classification
+(`logic` / `interactive`), the CP's test items, state fixtures.
+Phases 2–4 run as below, without user STOPs in between.
+
+### Scope
+
+| Classification | Tests | Run only this CP |
+|----------------|-------|------------------|
+| `interactive` | Playwright, `@CP-n` in each test title: `test('IT-3 expands score @CP-3', …)` | `npx playwright test e2e/<task>.spec.ts --grep @CP-3` |
+| `logic` | Unit tests with the project's jest or vitest, `@CP-n` in each test name | `npx vitest run <file> -t @CP-3` / `npx jest <file> -t @CP-3` |
+
+Write tests for this CP's items only.
+
+### Empty stubs before RED
+
+A test that cannot import its target fails for the environment, not the behavior.
+Before RED, a new module may exist as an empty stub: exported signature and a neutral
+return (`null`, `[]`, a component rendering `null`). No logic, no markup.
+
+### RED conditions — all required
+
+1. Before running, record each test's expected failure: which assertion fails on which value.
+2. Every new test fails.
+3. Each actual failure matches its expected failure. Environment failures are never RED:
+   module not found, syntax or type error, timeout, missing fixture.
+4. Every earlier CP's tests still pass.
+
+Mismatch → fix the test or environment and re-run. Still unmet after 3 attempts → STOP and
+escalate to the user with the evidence block.
+
+```
+CP-3 RED
+  new tests: 2 (IT-3, IT-4) → failed 2/2
+  IT-3 expected: getByRole('region', {name:'점수'}) not found → actual: same ✓
+  IT-4 expected: aria-expanded="true" → actual: element not found ✗ (fixed test, re-ran ✓)
+  earlier CP tests: 4/4 passing
+```
+
+### GREEN conditions — all required
+
+This CP's tests pass, every earlier CP's tests pass, typecheck and build pass.
+The stall counter (3) still applies.
+
+```
+CP-3 GREEN
+  CP tests: 2/2 passing (4 runs)
+  earlier CP tests: 4/4 passing
+  typecheck: pass / build: pass
+  selector stability: 100% (6/6)   ← interactive only
+```
+
+Return both blocks to fe-harness.
 
 ---
 

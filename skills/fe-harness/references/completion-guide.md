@@ -29,6 +29,10 @@ When all workflows finish, output a structured summary. This is **mandatory** �
 - `<file2>` — <설명>
 - ...
 
+### 체크포인트 (checkpoint 모드에서만)
+- CP-1: <목표> — <분류> — 커밋 `<sha>` — IT-1, IT-2 / 수정 요청 <N>회
+- CP-2: ...
+
 ### 이슈 및 참고사항
 - <특이사항, 스킵한 항목, 수동 확인 필요 사항 등. 없으면 "없음">
 ```

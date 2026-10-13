@@ -28,6 +28,10 @@ Question: $question"
     rm -f "$outfile"
 }
 
+first_line() {
+    echo "$1" | grep -v '^Warning: no stdin' | grep -v '^[[:space:]]*$' | head -1
+}
+
 echo "=== Test: fe-interaction-tdd skill ==="
 echo ""
 
@@ -72,6 +76,44 @@ echo "Test 7: Does not inline API response bodies in the spec file..."
 output=$(ask "The project has no MSW. May the spec file contain an inline JSON response body, e.g. route.fulfill({ body: JSON.stringify({ id: 1, name: 'Jane' }) })? Start your answer with Yes or No, then say where the response body goes.")
 if assert_contains "$output" "^No\|^\*\*No" "Inline response body not allowed"; then :; else exit 1; fi
 if assert_contains "$output" "fixtures/states" "Response body goes to a state fixture"; then :; else exit 1; fi
+echo ""
+
+# Test 8: Environment failure is not RED
+echo "Test 8: 'Cannot find module' failure is not accepted as RED..."
+output=$(ask "In checkpoint mode, all new tests fail with \"Cannot find module './toReportSections'\". Is RED confirmed? Start with Yes or No.")
+if assert_contains "$(first_line "$output")" "^No\\|^\\*\\*No" "Module-not-found is not RED"; then :; else exit 1; fi
+echo ""
+
+# Test 9: No user STOP between writing and running tests in checkpoint mode
+echo "Test 9: Checkpoint mode replaces phase STOPs with evidence blocks..."
+output=$(ask "In checkpoint mode, after writing CP-3's tests, do you stop and wait for the user before running them? Start with Yes or No, then say what you produce instead.")
+if assert_contains "$(first_line "$output")" "^No\\|^\\*\\*No" "No STOP after writing tests"; then :; else exit 1; fi
+if assert_contains "$output" "evidence" "Produces evidence block"; then :; else exit 1; fi
+echo ""
+
+# Test 10: Run only the checkpoint's tests
+echo "Test 10: Runs only this checkpoint's Playwright tests..."
+output=$(ask "In checkpoint mode, how do you run only CP-3's Playwright tests? Give the command.")
+if assert_contains "$output" "grep.*@CP-3\|grep.*CP-3" "Uses --grep with CP tag"; then :; else exit 1; fi
+echo ""
+
+# Test 11: Previous checkpoint tests must keep passing
+echo "Test 11: RED requires previous checkpoint tests to still pass..."
+output=$(ask "In checkpoint mode, CP-3's new tests all fail for the expected reasons, but one CP-1 test now also fails. Is RED confirmed? Start with Yes or No.")
+if assert_contains "$(first_line "$output")" "^No\\|^\\*\\*No" "Broken earlier test blocks RED"; then :; else exit 1; fi
+echo ""
+
+# Test 12: logic checkpoints use unit tests
+echo "Test 12: logic checkpoints use the project's unit test runner..."
+output=$(ask "In checkpoint mode, CP-1 is classified as logic. What kind of test do you write and which tool runs it?")
+if assert_contains "$output" "unit\|Unit" "Unit tests"; then :; else exit 1; fi
+if assert_contains "$output" "jest\|vitest\|Jest\|Vitest" "jest/vitest"; then :; else exit 1; fi
+echo ""
+
+# Test 13: Classic mode keeps the STOP after writing tests (regression)
+echo "Test 13: Classic mode still stops after writing tests..."
+output=$(ask "In the default mode (not checkpoint mode), after writing the tests, do you stop and wait for the user before running them? Start with Yes or No.")
+if assert_contains "$(first_line "$output")" "^Yes\\|^\\*\\*Yes" "Classic STOP kept"; then :; else exit 1; fi
 echo ""
 
 echo "=== All fe-interaction-tdd skill tests passed ==="

@@ -89,6 +89,7 @@ implementation), use fe-harness skills instead of superpowers test-driven-develo
 - **Harness accumulation** — tests, preview routes, and baselines stay in the project as permanent infrastructure
 - **Stall detection** — stops and escalates to human when progress stalls (3 consecutive non-improvements)
 - **STOP gates** — each phase requires explicit user confirmation before proceeding
+- **Checkpoint mode** — splits work into small checkpoints; each passes RED → GREEN automatically with evidence blocks, then one user approval commits it
 
 ## Scripts
 
