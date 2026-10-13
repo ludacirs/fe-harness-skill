@@ -84,7 +84,7 @@ implementation), use fe-harness skills instead of superpowers test-driven-develo
 - **Interaction TDD** — 구현 전에 Playwright 테스트 작성, 진짜 RED/GREEN 게이트
 - **Visual verification** — Claude가 Figma 스크린샷과 브라우저 렌더링을 비교 (픽셀 diff 아님)
 - **Regression** — `diff.ts` (pixelmatch)로 baseline 이후 browser-to-browser 비교
-- **API 모킹** — MSW 감지 또는 `page.route()` 폴백; capture.ts용 `--mock-routes`
+- **상태 fixture** — `e2e/fixtures/states/`의 이름 붙은 API 상태를 `page.route()`, MSW, capture.ts `--mock-routes`가 함께 사용
 - **하네스 축적** — 테스트, preview 라우트, baseline이 프로젝트에 영구 인프라로 남음
 - **정체 감지** — 진전이 없으면 (3회 연속 미개선) 중단하고 사용자에게 에스컬레이션
 - **STOP 게이트** — 각 Phase마다 사용자의 명시적 확인이 필요

@@ -121,17 +121,25 @@ Write **all** spec items as tests in `e2e/<task>.spec.ts` at once.
 - One `test()` per spec item
 - Prefer role-based selectors (`getByRole`, `getByLabel`)
 
-### Step 2. Handle API mocking
+### Step 2. Set API state from the state fixture catalog
 
-If there are API calls: use MSW (if in package.json) or `page.route()` inline.
-Put mock data in `e2e/mocks/`. If endpoints or response shapes are unknown → ask the user.
-See [references/mock-troubleshooting.md](references/mock-troubleshooting.md) for the decision tree and common fixes.
+If there are API calls, every response comes from a named state fixture in
+`e2e/fixtures/states/<domain>.<state>.json` (e.g. `profile.diagnosisDone.json`).
+
+1. List `e2e/fixtures/states/` first. Pick existing states by name.
+2. Create a file only for a state that is missing. Take the response shape from a
+   real API response or the OpenAPI schema. If endpoints or shapes are unknown → ask the user.
+3. Spec files load states by name. Response bodies never appear inline in spec files.
+
+File format, loading via `page.route()` / MSW / `capture.ts --mock-routes`:
+[references/state-fixtures.md](references/state-fixtures.md).
+Interception problems: [references/mock-troubleshooting.md](references/mock-troubleshooting.md).
 
 ### Phase 2 output
 
 Files created in this Phase:
 - `e2e/<task>.spec.ts` (test file)
-- `e2e/mocks/*.json` (mock data, if needed)
+- `e2e/fixtures/states/*.json` (new state fixtures only, if needed)
 - `dev/preview/<Component>.preview.tsx` (test infrastructure, component tasks only)
 
 <HARD-GATE>
@@ -140,7 +148,8 @@ If you created implementation files (components, pages, styles, routes, layouts)
 
 ### >>> STOP — Present to user and wait <<<
 
-> "Phase 2 complete. Wrote N tests in `e2e/<task>.spec.ts`. Shall I run them to confirm RED?"
+> "Phase 2 complete. Wrote N tests in `e2e/<task>.spec.ts`.
+> States reused: [names]. States added: [names]. Shall I run them to confirm RED?"
 
 **Do not run tests yet. Do not proceed to Phase 3 until user confirms.**
 
@@ -233,7 +242,7 @@ The report is informational — review and address warnings if practical.
 ## Checklist
 
 - [ ] Prerequisites verified (playwright.config.ts, e2e/, preview route)
-- [ ] API mocking strategy decided (MSW / page.route / none)
+- [ ] API states taken from `e2e/fixtures/states/` (reused by name, missing ones added)
 - [ ] All tests written — **STOP, wait for user confirmation**
 - [ ] Tests run, all RED confirmed — **STOP, wait for user confirmation**
 - [ ] Implementation complete, all GREEN confirmed

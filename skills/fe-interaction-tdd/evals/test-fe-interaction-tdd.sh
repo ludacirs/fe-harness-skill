@@ -61,4 +61,17 @@ output=$(ask "Can I write implementation code during Phase 2?")
 if assert_contains "$output" "No\|no\|not\|cannot\|forbidden\|test.*only\|never\|prohibited" "Implementation code prohibited"; then :; else exit 1; fi
 echo ""
 
+# Test 6: State fixture catalog is read before writing mocks
+echo "Test 6: Reads the state fixture catalog before writing API mocks..."
+output=$(ask "A test needs the API to return 'user who finished the diagnosis'. Before writing any mock data, which directory must you check first? Answer with the path.")
+if assert_contains "$output" "e2e/fixtures/states" "Checks e2e/fixtures/states first"; then :; else exit 1; fi
+echo ""
+
+# Test 7: Response bodies live in state fixtures, not inline in spec files
+echo "Test 7: Does not inline API response bodies in the spec file..."
+output=$(ask "The project has no MSW. May the spec file contain an inline JSON response body, e.g. route.fulfill({ body: JSON.stringify({ id: 1, name: 'Jane' }) })? Start your answer with Yes or No, then say where the response body goes.")
+if assert_contains "$output" "^No\|^\*\*No" "Inline response body not allowed"; then :; else exit 1; fi
+if assert_contains "$output" "fixtures/states" "Response body goes to a state fixture"; then :; else exit 1; fi
+echo ""
+
 echo "=== All fe-interaction-tdd skill tests passed ==="

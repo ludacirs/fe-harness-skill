@@ -24,17 +24,14 @@ Does the task make API calls?
   │
   ├── No → proceed without mocking
   │
-  └── Yes → detect project mocking infrastructure:
+  └── Yes → responses come from e2e/fixtures/states/ (see state-fixtures.md)
         │
         ├── MSW present (msw in package.json)
-        │   → Use existing handlers or add new ones
-        │   → For component preview routes, configure handlers in the preview file if needed
+        │   → Node (setupServer): build handlers with stateHandlers(...)
+        │   → Browser worker / preview file: import the state JSON files directly
         │
         └── No MSW
-            → Use page.route() inline in test files:
-              await page.route('**/api/login', route =>
-                route.fulfill({ status: 200, body: JSON.stringify({ token: '...' }) })
-              );
+            → useStates(page, 'profile.diagnosisDone', ...) in the test
 
 If API endpoints or response shapes are unknown → ask human.
 ```
