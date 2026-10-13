@@ -87,4 +87,30 @@ if assert_contains "$(first_line "$output")" "^No\\|^\\*\\*No" "Does not continu
 if assert_contains "$output" "user\|escalat\|human\|to you" "Hands to user"; then :; else exit 1; fi
 echo ""
 
+# Test 9: Review gate runs between GREEN and G5
+echo "Test 9: Two independent reviewers run before the checkpoint report..."
+output=$(ask "In checkpoint mode, CP-2 just reached GREEN. What happens before the G5 checkpoint report? Name the reviewers.")
+if assert_contains "$output" "spec fidelity\|Spec fidelity\|Reviewer A\|reviewer A" "Spec fidelity reviewer"; then :; else exit 1; fi
+if assert_contains "$output" "maintainab\|Maintainab\|Reviewer B\|reviewer B" "Maintainability reviewer"; then :; else exit 1; fi
+echo ""
+
+# Test 10: Findings cannot be dismissed without a reason
+echo "Test 10: A review finding cannot be dropped without a grounded reason..."
+output=$(ask "In checkpoint mode, reviewer A flags a hardcoded value in CP-2. You think it is fine. May you leave it out of the G5 report without fixing it or writing a reason? Start with Yes or No.")
+if assert_contains "$(first_line "$output")" "^No\\|^\\*\\*No" "Cannot silently drop"; then :; else exit 1; fi
+echo ""
+
+# Test 11: Fixing a finding re-runs GREEN
+echo "Test 11: After fixing a review finding, GREEN is re-confirmed..."
+output=$(ask "In checkpoint mode, you fixed reviewer B's finding in CP-2. May you go straight to the G5 report? Start with Yes or No, then say what comes first.")
+if assert_contains "$(first_line "$output")" "^No\\|^\\*\\*No" "Not straight to G5"; then :; else exit 1; fi
+if assert_contains "$output" "GREEN\|G2" "Re-run from G2/GREEN"; then :; else exit 1; fi
+echo ""
+
+# Test 12: Review round limit
+echo "Test 12: Review rounds per checkpoint are capped at 2..."
+output=$(ask "In checkpoint mode, what is the maximum number of review rounds for one checkpoint before it is handed to the user? Answer with a number first.")
+if assert_contains "$(first_line "$output")" "^2\\|^\\*\\*2\\|^Two\\|^\\*\\*Two" "Cap is 2"; then :; else exit 1; fi
+echo ""
+
 echo "=== All fe-harness orchestrator skill tests passed ==="
