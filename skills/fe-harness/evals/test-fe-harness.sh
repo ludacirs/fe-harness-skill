@@ -28,6 +28,10 @@ Question: $question"
     rm -f "$outfile"
 }
 
+first_line() {
+    echo "$1" | grep -v '^Warning: no stdin' | grep -v '^[[:space:]]*$' | head -1
+}
+
 echo "=== Test: fe-harness orchestrator skill ==="
 echo ""
 
@@ -55,6 +59,32 @@ echo ""
 echo "Test 4: Invokes finishing after verification..."
 output=$(ask "Which superpowers skill is invoked after verification?")
 if assert_contains "$output" "finishing\|Finishing\|development.branch" "Invokes finishing"; then :; else exit 1; fi
+echo ""
+
+# Test 5: Checkpoint mode human STOPs are plan approval + one per checkpoint
+echo "Test 5: Checkpoint mode stops once for the plan and once per checkpoint..."
+output=$(ask "In checkpoint mode, a task is planned as 4 checkpoints and every checkpoint is approved on the first try. Counting from fe-spec until the last checkpoint is committed, how many times does the user confirm something? Answer with a number first, then list them.")
+if assert_contains "$(first_line "$output")" "^5\|^\*\*5\|^Five\|^\*\*Five" "1 plan + 4 checkpoint approvals"; then :; else exit 1; fi
+echo ""
+
+# Test 6: RED is not a human STOP in checkpoint mode
+echo "Test 6: Checkpoint mode does not ask the user to confirm RED..."
+output=$(ask "In checkpoint mode, does the user confirm RED for each checkpoint before implementation starts? Start with Yes or No, then say what replaces it.")
+if assert_contains "$(first_line "$output")" "^No\\|^\\*\\*No" "No RED STOP"; then :; else exit 1; fi
+if assert_contains "$output" "evidence" "Evidence block replaces it"; then :; else exit 1; fi
+echo ""
+
+# Test 7: No commit without G5 approval
+echo "Test 7: Cannot commit a checkpoint without user approval..."
+output=$(ask "In checkpoint mode, CP-2 is GREEN and the build passes. May you commit CP-2 and start CP-3 without asking the user? Start with Yes or No.")
+if assert_contains "$(first_line "$output")" "^No\\|^\\*\\*No" "Commit requires approval"; then :; else exit 1; fi
+echo ""
+
+# Test 8: Unmet evidence condition stops the loop
+echo "Test 8: Unmet evidence condition hands control to the user..."
+output=$(ask "In checkpoint mode, the RED evidence for CP-3 cannot be satisfied: one new test keeps passing before implementation. May you continue to implementation anyway? Start with Yes or No, then say what happens.")
+if assert_contains "$(first_line "$output")" "^No\\|^\\*\\*No" "Does not continue"; then :; else exit 1; fi
+if assert_contains "$output" "user\|escalat\|human" "Hands to user"; then :; else exit 1; fi
 echo ""
 
 echo "=== All fe-harness orchestrator skill tests passed ==="
