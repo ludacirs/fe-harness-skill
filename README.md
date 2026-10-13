@@ -85,7 +85,7 @@ implementation), use fe-harness skills instead of superpowers test-driven-develo
 - **Interaction TDD** — Playwright tests written before implementation, real RED/GREEN gate
 - **Visual verification** — Claude compares Figma screenshot vs browser rendering (not pixel diff)
 - **Regression** — `diff.ts` (pixelmatch) for browser-to-browser comparison after baseline is established
-- **API mocking** — detects MSW or falls back to `page.route()`; `--mock-routes` for capture.ts
+- **State fixtures** — named API states in `e2e/fixtures/states/`, shared by `page.route()`, MSW, and capture.ts `--mock-routes`
 - **Harness accumulation** — tests, preview routes, and baselines stay in the project as permanent infrastructure
 - **Stall detection** — stops and escalates to human when progress stalls (3 consecutive non-improvements)
 - **STOP gates** — each phase requires explicit user confirmation before proceeding

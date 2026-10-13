@@ -44,7 +44,7 @@ When all workflows finish, output a structured summary. This is **mandatory** â€
 
 ```
 e2e/<task>.spec.ts              <- interaction tests (cumulative)
-e2e/mocks/                      <- API mock data (reusable)
+e2e/fixtures/states/            <- named API state fixtures (reusable)
 dev/preview/<Component>.tsx     <- preview routes (cumulative)
 __baselines__/{route}/{step}.png <- structured baseline screenshots (commit)
 visual-qa/config.json           <- per-task thresholds (commit)
