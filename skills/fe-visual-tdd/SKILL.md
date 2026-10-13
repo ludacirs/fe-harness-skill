@@ -48,7 +48,7 @@ digraph fe_visual_tdd {
 ## ABSOLUTE RULES
 
 1. **Do not use Figma MCP in Workflow B.** Image downloads use the REST API (`figma-export.ts`); comparisons use Claude vision (local files). MCP inline screenshots cannot be saved to disk.
-2. **Do not declare completion until all VT items are ✅.**
+2. **Do not declare completion until all VT items are ✅.** In checkpoint mode, "all" means all of this CP's VT items.
 3. **Do not use `diff.ts` for Figma vs browser comparison.** Font rendering and anti-aliasing differences make cross-engine pixel comparison unreliable. `diff.ts` is for browser vs browser regression only.
 
 ### Rationalization Table — If you think this, STOP
@@ -75,6 +75,22 @@ npx playwright install chromium --with-deps
 |------|-------|--------|
 | **Figma** | fileKey, nodeId(s) | Build Visual Test List → download expected → capture → compare with Figma → baseline |
 | **Baseline** | None (independent trigger) | Capture current state → save as baseline (regression reference point) |
+
+---
+
+## Checkpoint Mode
+
+Used when fe-harness runs G3 for one checkpoint (CP). Input: CP id, the CP's VT items
+(with nodeIds), fileKey, viewport, state fixtures.
+
+| Classic step | In checkpoint mode |
+|--------------|--------------------|
+| Phase 5 Step 1: build Visual Test List + STOP | Skip. The VT items were approved in the checkpoint plan |
+| Phase 5 Step 2–3: download, verify | This CP's VT items only; skip images already in `visual-qa/expected/` |
+| Phase 6 Steps 2–5: capture, compare, iterate, baseline | This CP's VT items only. Capture with the CP's state fixtures via `--mock-routes` |
+| Phase 6 STOP | No STOP. Return each VT item's verdict block and baseline path to fe-harness |
+
+Stall counter 3 on any VT item → STOP and escalate to the user with its verdict blocks.
 
 ---
 
@@ -276,7 +292,7 @@ See [references/ci-guide.md](references/ci-guide.md) for CI pipeline setup.
 
 ## Checklist
 
-- [ ] Visual Test List built (Figma mode) — **STOP, wait for user confirmation**
+- [ ] Visual Test List built (Figma mode) — **STOP, wait for user confirmation** (checkpoint mode: skip, approved in the plan)
 - [ ] All expected images downloaded (Figma mode)
 - [ ] Downloads verified — expected image exists for every VT item
 - [ ] Each VT item captured (capture.ts)
@@ -284,5 +300,5 @@ See [references/ci-guide.md](references/ci-guide.md) for CI pipeline setup.
 - [ ] Each VT item's verdict block recorded — paths, observed differences, evidence
 - [ ] Suspected position/size/spacing differences measured (`getBoundingClientRect` vs design spec), not eyeballed
 - [ ] All VT items ✅ PASS
-- [ ] Actual route vs preview comparison (Step 4-b) — drift check passed — **STOP, wait for user confirmation**
+- [ ] Actual route vs preview comparison (Step 4-b) — drift check passed — **STOP, wait for user confirmation** (checkpoint mode: return verdict blocks instead)
 - [ ] Baseline saved, artifacts committed

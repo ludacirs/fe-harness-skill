@@ -113,4 +113,10 @@ output=$(ask "In checkpoint mode, what is the maximum number of review rounds fo
 if assert_contains "$(first_line "$output")" "^2\\|^\\*\\*2\\|^Two\\|^\\*\\*Two" "Cap is 2"; then :; else exit 1; fi
 echo ""
 
+# Test 13: Visual comparison runs per checkpoint
+echo "Test 13: fe-visual-tdd runs once per checkpoint that has VT items..."
+output=$(ask "In checkpoint mode, a task has 4 checkpoints; only CP-2 and CP-3 have VT items. How many times is fe-visual-tdd invoked in total? Answer with a number first.")
+if assert_contains "$(first_line "$output")" "^2\\|^\\*\\*2\\|^Two\\|^\\*\\*Two" "Once per CP with VT items"; then :; else exit 1; fi
+echo ""
+
 echo "=== All fe-harness orchestrator skill tests passed ==="

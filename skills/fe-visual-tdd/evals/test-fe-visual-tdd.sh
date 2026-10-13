@@ -28,6 +28,10 @@ Question: $question"
     rm -f "$outfile"
 }
 
+first_line() {
+    echo "$1" | grep -v '^Warning: no stdin' | grep -v '^[[:space:]]*$' | head -1
+}
+
 echo "=== Test: fe-visual-tdd skill ==="
 echo ""
 
@@ -71,6 +75,32 @@ echo ""
 echo "Test 7: Suspected spacing difference is measured, not eyeballed..."
 output=$(ask "During visual comparison, the title looks a few pixels lower than in Figma but I am not sure. What should I do?")
 if assert_contains "$output" "getBoundingClientRect\|get_metadata\|bounding" "Measures geometry"; then :; else exit 1; fi
+echo ""
+
+# Test 8: Classic mode keeps the VT list STOP (regression)
+echo "Test 8: Default mode still stops to confirm the Visual Test List..."
+output=$(ask "In the default mode (not checkpoint mode), Figma mode: do you stop for the user to confirm the Visual Test List before downloading images? Start with Yes or No.")
+if assert_contains "$(first_line "$output")" "^Yes\\|^\\*\\*Yes" "Classic VT list STOP kept"; then :; else exit 1; fi
+echo ""
+
+# Test 9: Checkpoint mode skips the VT list STOP
+echo "Test 9: Checkpoint mode does not stop for the VT list..."
+output=$(ask "In checkpoint mode, Figma mode: do you stop for the user to confirm the Visual Test List before downloading images? Start with Yes or No, then say why.")
+if assert_contains "$(first_line "$output")" "^No\\|^\\*\\*No" "No VT list STOP"; then :; else exit 1; fi
+if assert_contains "$output" "plan" "Already approved in the checkpoint plan"; then :; else exit 1; fi
+echo ""
+
+# Test 10: Checkpoint mode processes only the CP's VT items
+echo "Test 10: Checkpoint mode processes only this checkpoint's VT items..."
+output=$(ask "In checkpoint mode, the spec has VT-1, VT-2, VT-3 and the current checkpoint CP-2 lists only VT-2. How many VT items do you capture and compare now? Answer with a number first.")
+if assert_contains "$(first_line "$output")" "^1\\|^\\*\\*1\\|^One\\|^\\*\\*One" "Only the CP's VT item"; then :; else exit 1; fi
+echo ""
+
+# Test 11: Checkpoint mode returns verdict blocks instead of the final STOP
+echo "Test 11: Checkpoint mode returns verdict blocks instead of stopping..."
+output=$(ask "In checkpoint mode, all of the checkpoint's VT items pass. Do you stop and wait for the user to confirm the visual results? Start with Yes or No, then say what you do instead.")
+if assert_contains "$(first_line "$output")" "^No\\|^\\*\\*No" "No final STOP"; then :; else exit 1; fi
+if assert_contains "$output" "verdict" "Returns verdict blocks"; then :; else exit 1; fi
 echo ""
 
 echo "=== All fe-visual-tdd skill tests passed ==="
