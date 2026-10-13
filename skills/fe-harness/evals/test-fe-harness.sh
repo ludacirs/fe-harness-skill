@@ -84,7 +84,7 @@ echo ""
 echo "Test 8: Unmet evidence condition hands control to the user..."
 output=$(ask "In checkpoint mode, the RED evidence for CP-3 cannot be satisfied: one new test keeps passing before implementation. May you continue to implementation anyway? Start with Yes or No, then say what happens.")
 if assert_contains "$(first_line "$output")" "^No\\|^\\*\\*No" "Does not continue"; then :; else exit 1; fi
-if assert_contains "$output" "user\|escalat\|human" "Hands to user"; then :; else exit 1; fi
+if assert_contains "$output" "user\|escalat\|human\|to you" "Hands to user"; then :; else exit 1; fi
 echo ""
 
 echo "=== All fe-harness orchestrator skill tests passed ==="
