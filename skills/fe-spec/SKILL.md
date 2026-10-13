@@ -168,10 +168,13 @@ Do not write any code until the user confirms the classification.
 Split the spec into checkpoints (CP-1 … CP-n), each reviewable in a few minutes.
 Fill the Checkpoint Plan table in [references/spec-template.md](references/spec-template.md).
 
-### Step 1. Read the state fixture catalog
+### Step 1. Read the state fixture catalog and lessons
 
 List `e2e/fixtures/states/`. Fill each CP's state column with existing names;
 mark states that do not exist yet as `(new)`.
+
+Read `.fe-harness/lessons.md` if it exists. Plan CPs so its rules hold
+(e.g. a lesson to reuse a shared component puts that component in the CP's expected files).
 
 ### Step 2. Classify each checkpoint
 
@@ -220,6 +223,6 @@ The next skill (fe-interaction-tdd or fe-visual-tdd) receives this output as inp
   - [ ] Spec — **STOP, wait for user confirmation**
   - [ ] Complexity classified (style-only / interactive / ambiguous → ask) — **STOP, wait for user confirmation**
 - Checkpoint mode:
-  - [ ] `e2e/fixtures/states/` listed
+  - [ ] `e2e/fixtures/states/` listed, `.fe-harness/lessons.md` read
   - [ ] Checkpoint plan built (≤5 test items per CP, ordered, every IT/VT assigned)
   - [ ] Spec + plan — **STOP, wait for user approval**

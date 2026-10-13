@@ -116,4 +116,10 @@ output=$(ask "In the default mode (not checkpoint mode), after writing the tests
 if assert_contains "$(first_line "$output")" "^Yes\\|^\\*\\*Yes" "Classic STOP kept"; then :; else exit 1; fi
 echo ""
 
+# Test 14: Implementation reads lessons in checkpoint mode
+echo "Test 14: Checkpoint mode reads the lessons file before implementing..."
+output=$(ask "In checkpoint mode, RED is confirmed for CP-3. List every file you read before writing implementation code.")
+if assert_contains "$output" "lessons" "Reads lessons"; then :; else exit 1; fi
+echo ""
+
 echo "=== All fe-interaction-tdd skill tests passed ==="

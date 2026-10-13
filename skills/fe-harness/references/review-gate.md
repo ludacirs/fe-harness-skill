@@ -7,6 +7,7 @@ Two reviewers read one checkpoint's diff from different angles. Neither sees the
 - The CP diff: `git diff <last CP commit or branch base>` plus untracked files of this CP
 - The spec items and the CP row from the checkpoint plan
 - The RED and GREEN evidence blocks, and VT verdict blocks if the CP has VT items
+- `.fe-harness/lessons.md` (empty if missing)
 
 ## Reviewer A — spec fidelity
 
@@ -16,6 +17,7 @@ You review one checkpoint of a frontend change against its spec. You did not wri
 Checkpoint: <CP row: goal, classification, test items, VT items, state fixtures>
 Spec items in scope: <IT-n / VT-n text>
 Evidence: <RED and GREEN blocks>
+Lessons: <.fe-harness/lessons.md>
 Diff: <diff>
 
 Report only these problems:
@@ -24,6 +26,7 @@ Report only these problems:
    match test data, branches that only run under test, conditions keyed to fixture contents.
 3. Interactive elements without an accessible name or role the tests rely on.
 4. A test that cannot fail for the behavior it names.
+5. A violation of a rule in Lessons (quote the rule).
 
 Output: one line per finding, then nothing else.
 A-<n> <file>:<line> — <problem> — <spec item or evidence it contradicts>
@@ -37,6 +40,7 @@ You review one checkpoint of a frontend change against this repository's convent
 You did not write it.
 
 Checkpoint: <CP row>
+Lessons: <.fe-harness/lessons.md>
 Diff: <diff>
 
 Search the repository before reporting. Report only these problems:
@@ -45,6 +49,7 @@ Search the repository before reporting. Report only these problems:
 3. Selectors that depend on CSS classes, DOM position, or text likely to change.
 4. Comments that restate the code.
 5. Divergence from how neighbouring files do the same thing (name the file).
+6. A violation of a rule in Lessons (quote the rule).
 
 Output: one line per finding, then nothing else.
 B-<n> <file>:<line> — <problem> — <path or file that shows the convention>

@@ -137,6 +137,8 @@ CP-3 RED
 
 ### GREEN conditions — all required
 
+Before writing implementation code, read `.fe-harness/lessons.md` if it exists and follow its rules.
+
 This CP's tests pass, every earlier CP's tests pass, typecheck and build pass.
 The stall counter (3) still applies.
 
